@@ -3,6 +3,8 @@ import PropTypes from 'prop-types';
 import { inject, observer } from 'mobx-react'
 import { getDate } from '../utils/func'
 
+import Labirint from '../icons/Labirint'
+
 import { Panel, PanelHeader, RichCell, List, Avatar } from '@vkontakte/vkui';
 
 import logo from '../img/logo.jpg'
@@ -17,7 +19,7 @@ const ContestList = inject('store')(observer(({ id, store }) => {
 		{store.contestList.map(contest => (
 			<RichCell
 			key={contest._id}
-			before={<Avatar size={48} src={logo}/>}
+			before={<div style={{display: 'flex', alignItems: 'center', marginRight: 10}}><Labirint/></div>}
 			caption={getDate(contest.date)}
 			after="скоро">
 				{contest.name}

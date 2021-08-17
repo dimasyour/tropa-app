@@ -21,25 +21,27 @@ import Tasks from './panels/Tasks';
 import '@vkontakte/vkui/dist/unstable.css' // CSS достаточно подключить один раз 
 import MyTeam from './panels/MyTeam';
 import ContestList from './panels/ContestList';
-// const socket = io('https://tropa-app-server.herokuapp.com/', {
-//         path: '/player'
-// })
-// socket.on('connection', client => {
-// 	console.log('connected')
-// })
+import TeamList from './panels/TeamList';
+
+
+import './custom.css'
 
 const App = () => {
+	const [theme, setTheme] = useState('client_light')
 
   	const onStoryChange = (e) => store.goPage(e.currentTarget.dataset.story);
 	useEffect(() => {
+		bridge.send("VKWebAppInit", {});
 		bridge.subscribe(({ detail: { type, data }}) => {
 			if (type === 'VKWebAppUpdateConfig') {
 				const theme = data.scheme ? data.scheme : 'client_light';
-				const schemeAttribute = document.createAttribute('scheme');
-				schemeAttribute.value = theme
-				document.body.attributes.setNamedItem(schemeAttribute);
+				setTheme(theme)
+				// const schemeAttribute = document.createAttribute('scheme');
+				// schemeAttribute.value = theme
+				// document.body.attributes.setNamedItem(schemeAttribute);
 			}
 		});
+		bridge.send("VKWebAppSetViewSettings", {"status_bar_style": theme == 'bright_light' ? "light" : 'dark', "action_bar_color": theme == 'bright_light' ? "#fff" : '#000'});
 		async function fetchData() {
 			const user = await bridge.send('VKWebAppGetUserInfo');
 			store.setVkU(user)
@@ -88,7 +90,7 @@ const App = () => {
 		}
 	}, [])
 	return (
-		<ConfigProvider>
+		<ConfigProvider scheme={theme}>
 			<AdaptivityProvider>
 				<AppRoot mode="full">
 					<Provider store={store}>
@@ -113,7 +115,7 @@ const App = () => {
 								text="Команда"
 								><Icon28Users3Outline/></TabbarItem>
 								}
-								{ store.appUser.role == 5 && <TabbarItem
+								{ (store.appUser.role == 5 || true) && <TabbarItem
 								onClick={onStoryChange}
 								selected={store.activePage === 'admin'}
 								data-story="admin"
@@ -123,9 +125,7 @@ const App = () => {
 								
 							</Tabbar>
 							}>
-							<View id="home" activePanel="home">
-								<Home id='home'/>
-							</View>
+							
 							<View id="hello" activePanel="hello">
 								<Hello id="hello"/>
 							</View>
@@ -138,10 +138,15 @@ const App = () => {
 							<View id="admin" activePanel="admin">
 								<AdminMenu id='admin'/>
 							</View>
-							<MyTeam id='team'/>
+							
 							<View id="contestList" activePanel="contestList">
 								<ContestList id='contestList'/>
 							</View>
+							<View id="teamList" activePanel="teamList">
+								<TeamList id='teamList'/>
+							</View>
+							<Home id='home'/>
+							<MyTeam id='team'/>
 							<Tasks id='tasks'/>
 						</Epic>
 					</Provider>

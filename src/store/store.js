@@ -1,8 +1,9 @@
 import { action, configure, observable, makeObservable, computed, when, autorun } from 'mobx'
-import { ScreenSpinner } from '@vkontakte/vkui'
+import { ScreenSpinner, Snackbar, Avatar } from '@vkontakte/vkui'
+import { Icon16Done, Icon16ErrorCircle } from '@vkontakte/icons';
 import axios from 'axios'
 import makeInspectable from 'mobx-devtools-mst';
-
+import io from 'socket.io-client'
 import bridge from '@vkontakte/vk-bridge'
 import { serverURL, access_token } from '../config'
 
@@ -18,6 +19,8 @@ class MainStore{
             statusApp: observable,
             vk_mates: observable,
             contestList: observable,
+            socket: observable,
+            // homeSnackbar: observable,
 
             teamStatus: computed,
             userRole: computed,
@@ -29,7 +32,9 @@ class MainStore{
             goPage: action,
             getAppUser: action,
             togglePopout: action,
-            getContestList: action
+            getContestList: action,
+            createConnection: action,
+            // setHomeSnackbar: action,
         })
     }
 
@@ -41,8 +46,54 @@ class MainStore{
     appUser = null
     vk_mates = []
     contestList = []
+    homeSnackbar = null
     
     
+    socket = null
+    setHomeSnackbar = snackbar => this.homeSnackbar = snackbar
+    createConnection = () => {
+        this.socket = io("https://leton.cc/", {
+            reconnectionDelayMax: 10000,
+            query: {
+                "team": this.appUser.team._id
+            }
+        });
+        this.socket.on('connect', (data) => {
+			this.setHomeSnackbar(<Snackbar
+                onClose={() => this.setHomeSnackbar(null)}
+                before={<Avatar size={24} style={{ background: 'var(--accent)' }}><Icon16Done fill="#fff" width={14} height={14} /></Avatar>}
+              >
+             	Соединение с Тропой установлено
+              </Snackbar>)
+		})
+
+		this.socket.on('disconnect', (reason) =>{
+			const reason_codes = [
+				{code: 'io server disconnect', reason: 'Отключён сервером'},
+				{code: 'io client disconnect', reason: 'Отключён клиентом'},
+				{code: 'ping timeout', reason: 'Сервер не ответил'},
+				{code: 'transport close', reason: 'Вы потеряли сеть либо изменили тип сети'},
+				{code: 'transport error', reason: 'Сервер не отвечает. Сообщите организаторам'},
+			]
+			this.setHomeSnackbar(<Snackbar
+                onClose={() => this.setHomeSnackbar(null)}
+                before={<Avatar size={24} style={{ background: 'var(--accent)' }}><Icon16ErrorCircle fill="#fff" width={14} height={14} /></Avatar>}
+              >
+             	{reason_codes.filter(code => code.code == reason).pop().reason}. Переподключаемся...
+              </Snackbar>)
+            setTimeout(() => { 
+                this.socket.connect()
+            }, 3000)
+		})
+        this.socket.on('connect_error', () => {
+            setTimeout(() => { 
+                this.socket.connect()
+            }, 1000)
+        })
+    }
+    
+
+
     updateTeammates = () => {
         this.appUser.team ? 
 		bridge.send("VKWebAppCallAPIMethod", {"method": "users.get", "params": {"user_ids": this.appUser.team.mates.map(mate => mate.uid).filter(mate => mate.uid != this.vk_u.id).join(','), "v":"5.131", "access_token": access_token, "fields": "photo_200"}}).then(data => {
@@ -63,7 +114,8 @@ class MainStore{
     getAppUser = function(){
         return axios.get(serverURL + 'users/create', {
             params:{
-                uid: this.vk_u.id
+                uid: this.vk_u.id,
+                vkUser: this.vk_u
             }
         }).then(res => {
             this.appUser = res.data.user
@@ -85,14 +137,14 @@ class MainStore{
     get teamContest(){
         const user = this.appUser
         return user.team ? this.contestList.filter(contest => contest.institute == user.team.institute).pop() 
-        : {}
+        : { e: 'empty'}
     }
     get userRole(){
         const status = [
-            `участник команды ${this.appUser.team?.name}`,
-            `капитан команды ${this.appUser.team?.name}`,
+            `${this.store?.vk_u.sex == 1 ? 'участница' : 'участник'} команды "${this.appUser.team?.name}"`,
+            `капитан команды "${this.appUser.team?.name}"`,
             'наблюдатель',
-            'организатор',
+            `организатор точки "${this.appUser.point?.title}"`,
             'модератор',
             'администратор'
         ]
@@ -113,9 +165,7 @@ const mainStore = new MainStore()
 
 autorun(() => {
     mainStore.updateTeammates()
-})
-autorun(() => {
-    console.log('curr team ', mainStore.teamContest)
+    // mainStore.createConnection()
 })
 
 export default makeInspectable(mainStore)

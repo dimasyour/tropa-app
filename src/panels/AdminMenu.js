@@ -16,14 +16,13 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
             <SimpleCell expandable  before={<Icon16StarCircle size={28}/>} onClick={store.goPage.bind(this, 'tasks')}>Задания-точки</SimpleCell>
         </Group>
         <Group header={<Header mode="secondary">Команды</Header>}>
-            <SimpleCell expandable  before={<Icon24UserAdded size={28}/>}>Одобрение заявок</SimpleCell>
+            <SimpleCell expandable  before={<Icon24UserAdded size={28}/>} onClick={store.goPage.bind(this, 'teamList')}>Одобрение заявок</SimpleCell>
             <SimpleCell expandable  before={<Icon28Search size={28}/>}>Информация о команде</SimpleCell>
         </Group>
-        <Group header={<Header mode="secondary">Участники</Header>}>
-            <SimpleCell expandable  before={<Icon28User size={28}/>}>Информация об участнике</SimpleCell>
+        <Group header={<Header mode="secondary">Пользователи</Header>}>
+            <SimpleCell expandable  before={<Icon28User size={28}/>}>Информация о пользователе</SimpleCell>
         </Group>
         <Group header={<Header mode="secondary">Организаторы</Header>}>
-            <SimpleCell expandable  before={<Icon16StarCircle size={28}/>}>Информация об организаторе</SimpleCell>
             <CellButton before={<Icon28AddOutline  size={28}/>}>Добавить организатора</CellButton>
             <CellButton before={<Icon28ChevronDownOutline size={28} />} mode="danger">Разжаловать организатора</CellButton>
         </Group>

@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { inject, observer } from 'mobx-react'
 import { Icon28AddOutline, Icon16Done } from '@vkontakte/icons';
 import { Icon16ErrorCircle } from '@vkontakte/icons';
+import { Icon20Hand } from '@vkontakte/icons';
 import axios from 'axios';
 import { serverURL } from '../config';
 
@@ -127,6 +128,17 @@ const MyTeam = inject('store')(observer(({ id, store }) => {
     const onChangeValue = (e) => {
         setNewName(e.target.value)
     }
+    const sendHi = () => {
+        store.socket.emit('sayhi', {user: store.vk_u, team: store.appUser.team._id})
+        store.socket.on('sayhi', (data) => {
+            setSnackbar(<Snackbar
+                onClose={() => setSnackbar(null)}
+                before={<Avatar size={24} src={data.user.photo_200}/>}
+              >
+               {`${data.user.first_name} ${data.user.last_name} обнял тебя`}
+              </Snackbar>)
+        })
+    }
 	return (
     <View popout={popout} id="team" activePanel="team">
         <Panel id={id}>
@@ -135,7 +147,7 @@ const MyTeam = inject('store')(observer(({ id, store }) => {
             </PanelHeader>
             <Group>
                 <RichCell
-                before={<Avatar size={48} />}
+                before={<Avatar size={48} style={{background: store.appUser.team.color}} />}
                 caption={`Заявка ${store.teamStatus}`}
             >
                 
@@ -174,8 +186,11 @@ const MyTeam = inject('store')(observer(({ id, store }) => {
                         {store.vk_mates.map((item) => (
                         <Cell removable={ item.id != store.appUser.team.leader.uid && store.activeContest?.institute != store.appUser.team.institute && store.appUser.role == 1} onRemove={() => onDeletion(store.appUser.team.mates.filter(i => i.uid == item.id).pop()._id)} description={item.id == store.appUser.team.leader.uid && 'Капитан'} before={<Avatar size={44} src={item.photo_200}/>} key={item.uid} >{item.first_name} {item.last_name}</Cell>
                         ))}
-                        {store.appUser.team.mates.length < 12 && store.activeContest?.institute != store.appUser.team.institute && <CellButton onClick={selectFriends} before={<Avatar shadow={false} size={44}><Icon28AddOutline /></Avatar>}>Добавить участников</CellButton>}
+                        {store.appUser.team.mates.length < 12 && store.activeContest?.institute != store.appUser.team.institute && store.appUser.role == 1 && <CellButton onClick={selectFriends} before={<Avatar shadow={false} size={44}><Icon28AddOutline /></Avatar>}>Добавить участников</CellButton>}
                     </List>
+            </Group>
+            <Group>
+                <CellButton onClick={sendHi} before={<Icon20Hand/>}>Обнять команду</CellButton>
             </Group>
             {snackbar}
         </Panel>

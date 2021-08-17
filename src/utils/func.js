@@ -10,7 +10,6 @@ const timeToDate = (date, from = new Date()) => {
 	}
 }
 const timeFormat = (format, value) => {
-	console.log(value)
 	const d = Math.floor(value / 60 / 60 / 24)
 	const h = Math.floor((value - 24 * 60 * 60 * d) / 60 / 60)
 	const m = Math.floor((value - 24 * 60 * 60 * d - 60 * 60 * h) / 60)

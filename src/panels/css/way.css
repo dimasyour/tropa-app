@@ -1,0 +1,39 @@
+.way-container{
+    display: flex;
+    flex-direction: column;
+  }
+  .item:first-child, .item:last-child{
+    height: 25px
+  }
+  .item{
+    margin: 0 20px;
+    height: 25px;
+    position: relative;
+  }
+  .item--disabled{
+    border-left: 7px solid #ababab;
+    color: #ababab
+  }
+  .item--disabled .item__point{
+    border: 3px solid #ababab;
+    background: white;
+  }
+  .item--active{
+    border-left: 7px solid red;
+  }
+  .item--active .item__point{
+    border: 3px solid red;
+    background: white;
+  }
+  .item__point{
+    position: absolute;
+    border-radius: 50%;
+    height: 10px;
+    width: 10px;
+    top: calc( 50% - 10px );
+    left: -11.5px
+  }
+  .item__name{
+    padding: 0 15px;
+    font-size: 14px
+  }

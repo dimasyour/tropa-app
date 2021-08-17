@@ -1,32 +1,292 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Fragment, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { inject, observer } from 'mobx-react'
-import { Panel, PanelHeader, Header, Button, Group, Cell, Avatar, RichCell } from '@vkontakte/vkui';
-import { timeToDate, timeFormat, getDate } from '../utils/func';
+import { Panel, Avatar, Header, PanelHeader, Snackbar, PanelHeaderClose, Counter, FormItem, Div, Button, Cell, Switch, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, ViewWidth, RichCell, View, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, FormLayout, Radio, Input, Text } from '@vkontakte/vkui';
+import { timeToDate, timeFormat, getDate, declOfNum } from '../utils/func';
+import { Icon28QrCodeOutline } from '@vkontakte/icons';
+import { Icon16Done, Icon16ErrorCircle, Icon24Cancel, Icon24Done } from '@vkontakte/icons';
+import { Icon16ClockCircleFill } from '@vkontakte/icons';
+import { Icon16Chevron } from '@vkontakte/icons';
 
-import logo from '../img/logo.jpg'
+import { serverURL } from '../config'
+import Way from './Way';
+import Labirint from '../icons/Labirint'
+import QRCode from 'react-qr-code'
 
 import bridge from '@vkontakte/vk-bridge'
-import { access_token } from '../config'
+import axios from 'axios';
 
 const Home = inject('store')(observer(({ id, store }) => {
-	const [ timerValue, updateTimerValue ] = useState(store.teamContest ? timeToDate(new Date(store.teamContest.date)).s : 0)
+	const platform = usePlatform()
+	const { viewWidth } = useAdaptivity();
+	const isMobile = viewWidth <= ViewWidth.MOBILE;
+	const [ timerValue, updateTimerValue ] = useState(0)
+	const [ activeModal, setActiveModal ] = useState(null)
+	const [ snackbar, setSnackbar ] = useState(null)
+	const [ teams, setTeams ] = useState([])
 	const timerHTML = <div>{timerValue ? timeFormat('dd дн. hh:mm:ss', timerValue) : ''}</div>
+
+	const [ rateTeam, setRateTeam ] = useState(null)
+
+	const [ idRate, setIdRate ] = useState(null)
+	const [ comment, setComment ] = useState('')
+	const [ rate, setRate ] = useState(0)
+
+	const idRateRef = useRef()
+	idRateRef.current = idRate
+
+	const [ isShow, setIsShow ] = useState(false)
 	useEffect(() => {
-		const interval = setInterval(() => {
-			if(timerValue == 0){
+		if(!store.appUser.team.start){
+			const interval = setInterval(() => {
+				if(timerValue == 0){
+					clearInterval(interval)
+					return
+				}
+				updateTimerValue(timerValue - 1)
+			}, 1000)
+			return () => {
 				clearInterval(interval)
-				return
 			}
-			updateTimerValue(timerValue - 1)
-		}, 1000)
-		return () => {
-			clearInterval(interval)
 		}
 	}, [timerValue])
+	useEffect(() => {
+		axios.get( serverURL + 'teams', { 
+			params: { type: 2 }
+		}).then(data => {
+			setTeams(data.data.teams)
+		})
+	}, [])
+
+
+	const snackbarOk = text => {
+		setSnackbar(<Snackbar
+			onClose={() => setSnackbar(null)}
+			before={<Avatar size={24} style={{ background: 'var(--accent)' }}><Icon16Done fill="#fff" width={14} height={14} /></Avatar>}
+			>
+				{text}
+			</Snackbar>)
+	}
+	const snackbarErr = text => {
+		setSnackbar(<Snackbar
+			onClose={() => setSnackbar(null)}
+			before={<Avatar size={24} style={{ background: 'var(--accent)' }}><Icon16ErrorCircle fill="#fff" width={14} height={14} /></Avatar>}
+		  >
+			 {text}
+		  </Snackbar>)
+	}
+
+
+	const readQR = () => {
+		bridge.send("VKWebAppOpenCodeReader").then(res => {
+			const { code_data } = res
+			snackbarOk(code_data)
+		}).catch(err => {
+			if(err.error_type == "client_error"){
+				snackbarErr(err.error_data.error_reason)
+			}
+		})
+	}
+	const sendRate = () => {
+		axios.get( serverURL + 'rate/new', {
+			params: {
+				team: rateTeam._id,
+				point: store.appUser.point.title, 
+				comment: comment,
+				rate: rate,
+				org: store.appUser._id
+			}
+		}).then(data => {
+			setActiveModal(null)
+			snackbarOk(data.data.text)
+			
+		}).catch(err => {
+			setActiveModal(null)
+			snackbarErr(err.error_data.error_reason)
+		})
+	}
+	const editRate = () => {
+		axios.get(serverURL + 'rate/edit', {
+			params: { 
+				rate: rate,
+				comment: comment,
+				id: idRateRef.current._id,
+			}
+		}).then(data => {
+			setActiveModal(null)
+			snackbarOk('Оценка успешно изменена')
+		}).catch(err => {
+			setActiveModal(null)
+			snackbarErr(err.error_data.error_reason)
+		})
+		axios.get( serverURL + 'teams', { 
+			params: { type: 2 }
+		}).then(data => {
+			setTeams(data.data.teams)
+		})
+	}
+	const onChangeComment = e => {
+		setComment(e.target.value)
+	}
+	const toggleShow = () => setIsShow(!isShow)
+	const modalRoot = (<ModalRoot activeModal={activeModal}>
+		<ModalPage
+		id="rules"
+		settlingHeight={100}
+		onClose={setActiveModal.bind(this, null)}
+		header={<ModalPageHeader
+			left={(
+				<Fragment>
+				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}><Icon24Cancel /></PanelHeaderButton>}
+				</Fragment>
+			  )}
+			  right={(
+				<Fragment>
+				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}><Icon24Done /></PanelHeaderButton>}
+				  {platform === IOS && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}>Готово</PanelHeaderButton>}
+				</Fragment>
+			  )}
+		  >
+			Напутствие
+		  </ModalPageHeader>} >
+			<FormItem>
+				Правила забега
+			</FormItem>
+			<FormItem>
+				<Button stretched mode="primary">Готовы начать</Button>
+			</FormItem>
+		</ModalPage>
+		<ModalPage
+		id="rateTeam1"
+		settlingHeight={100}
+		onClose={setActiveModal.bind(this, null)}
+		header={<ModalPageHeader
+			left={(
+				<Fragment>
+				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}><Icon24Cancel /></PanelHeaderButton>}
+				</Fragment>
+			  )}
+			  right={(
+				<Fragment>
+				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={setActiveModal.bind(this, 'rateTeam2')}><Icon24Done /></PanelHeaderButton>}
+				  {platform === IOS && <PanelHeaderButton onClick={setActiveModal.bind(this, 'rateTeam2')}>Готово</PanelHeaderButton>}
+				</Fragment>
+			  )}
+		  >
+			Следующая точка
+		  </ModalPageHeader>} >
+			<Div style={{display: 'flex', justifyContent: "center", flexDirection: 'column', height: "100%"}}>
+				<Div style={{textAlign: 'center'}}>
+					QR-code для команды "{rateTeam?.name}" для следующей точки
+				</Div>
+				<Div style={{background: "white", padding: '10px', margin: '0 auto', borderRadius: "6px", textAlign: 'center'}} >
+					<QRCode value={'kekovina'} size={250}/>
+				</Div>
+			</Div>
+		</ModalPage>
+		<ModalPage
+		id="rateTeam2"
+		settlingHeight={100}
+		onClose={setActiveModal.bind(this, null)}
+		header={<ModalPageHeader
+			left={(
+				<Fragment>
+				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}><Icon24Cancel /></PanelHeaderButton>}
+				</Fragment>
+			  )}
+		  >
+			{rateTeam?.name}
+		  </ModalPageHeader>} >
+			<Div style={{display: 'flex', justifyContent: "center", flexDirection: 'column', height: "100%"}}>
+				<FormLayout>
+					<FormItem top="Как вы оцениваете команду?">
+						{[0,1,2,3,4,5,6,7,8,9,10].map(rate => (
+							<Radio name="rate" onChange={setRate.bind(this, rate)}>{rate} {declOfNum(rate, ['балл', 'балла', 'баллов'])}</Radio>
+						))}
+            		</FormItem>
+					<FormItem top="Комментарий">
+						<Input name="comment" onChange={onChangeComment}/>
+            		</FormItem>
+					<FormItem>
+						<Button size="l" stretched onClick={sendRate}>Оценить</Button>
+					</FormItem>
+				</FormLayout>
+			</Div>
+		</ModalPage>
+		<ModalPage
+		id="editRate"
+		settlingHeight={100}
+		onClose={setActiveModal.bind(this, null)}
+		header={<ModalPageHeader
+			left={(
+				<Fragment>
+				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}><Icon24Cancel /></PanelHeaderButton>}
+				</Fragment>
+			  )}
+		  >
+			{rateTeam?.name}
+		  </ModalPageHeader>} >
+			<Div style={{display: 'flex', justifyContent: "center", flexDirection: 'column', height: "100%"}}>
+				<FormLayout>
+					<FormItem top="Как вы оцениваете команду?">
+						{[0,1,2,3,4,5,6,7,8,9,10].map(rate => (
+							<Radio name="rate" onChange={setRate.bind(this, rate)} disabled={idRateRef.current?.rate == rate}>{rate} {declOfNum(rate, ['балл', 'балла', 'баллов'])}{idRateRef.current?.rate == rate ? '(текущая)' : ''}</Radio>
+						))}
+            		</FormItem>
+					<FormItem top="Старый комментарий">
+						<Text>{idRateRef.current?.comment ?? 'отсутствует'}</Text>
+            		</FormItem>
+					<FormItem top="Комментарий(добавьте к комментарию причину изменения)">
+						<Input name="comment" onChange={onChangeComment}/>
+            		</FormItem>
+					<FormItem>
+						<Button size="l" stretched onClick={editRate}>Изменить</Button>
+					</FormItem>
+				</FormLayout>
+			</Div>
+		</ModalPage>
+		<ModalPage
+		id="way"
+		settlingHeight={100}
+		onClose={setActiveModal.bind(this, null)}
+		header={<ModalPageHeader
+			left={(
+				<Fragment>
+				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}><Icon24Cancel /></PanelHeaderButton>}
+				</Fragment>
+			  )}
+			  right={(
+				<Fragment>
+				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}><Icon24Done /></PanelHeaderButton>}
+				  {platform === IOS && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}>Готово</PanelHeaderButton>}
+				</Fragment>
+			  )}
+		  >
+			Маршрут
+		  </ModalPageHeader>} >
+			<Way/>
+		</ModalPage>
+		<ModalPage
+		id="check_ans"
+		settlingHeight={100}
+		onClose={setActiveModal.bind(this, null)}
+		header={<ModalPageHeader
+			right={platform === IOS && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}><Icon16Done/></PanelHeaderButton>}
+			left={isMobile && platform === ANDROID && <PanelHeaderClose onClick={setActiveModal.bind(this, null)}/>}
+		  >
+			Проверка ответа
+		  </ModalPageHeader>} >
+			Кек
+		</ModalPage>
+	</ModalRoot>)
 	return (
-	<Panel id={id}>
-		<PanelHeader>Тропа первака</PanelHeader>
+
+		<View id="home" activePanel="home" modal={modalRoot}>
+								<Panel id={id}>
+		<PanelHeader >Тропа первака 2021 </PanelHeader>
+
+
+
 		{store.vk_u &&
 		<Group>
 			<Cell
@@ -36,26 +296,71 @@ const Home = inject('store')(observer(({ id, store }) => {
 				{`${store.vk_u.first_name} ${store.vk_u.last_name}`}
 			</Cell>
 		</Group>}
-		{store.appUser.team && <Group header={<Header mode="secondary">Ваша тропа</Header>}>
+
+
+
+
+		{!store.appUser.team.start &&store.appUser.team && store.appUser.role < 2 && <Group header={<Header mode="secondary">Ваша тропа</Header>}>
 			{store.teamContest && <RichCell
 			key={store.teamContest._id}
-			before={<Avatar size={48} src={logo}/>}
+			before={<div style={{display: 'flex', alignItems: 'center', marginRight: 10}}><Labirint/></div>}
 			caption={getDate(store.teamContest.date)}
-			after={timerHTML}>
+			after={store.activeContest?.status ? <Button mode="outline" onClick={setActiveModal.bind(this, 'rules')}>Начать забег</Button> : timerValue}>
 				{store.teamContest.name}
 			</RichCell>}
 		</Group>
 		}
-		
+		{/* {store.appUser.team.start && store.appUser.team.currTask} */}
 		{store.appUser.role < 3 && store.activeContest && store.activeContest?.institute != store.appUser.team?.institute && <Group header={<Header mode="secondary">Активная тропа</Header>}>
 			<RichCell
 			key={store.activeContest._id}
-			before={<Avatar size={48} src={logo}/>}>
+			before={<div style={{display: 'flex', alignItems: 'center', marginRight: 10}}><Labirint/></div>}>
 				{store.activeContest.name}
 			</RichCell>
 		</Group>
 		}
+
+
+
+
+		{store.appUser.role < 3 && <Group header={<Header mode="secondary">Текущее задание</Header>}>
+			<RichCell
+			caption="12 корпус"
+			after={<Icon28QrCodeOutline onClick={readQR}/>}>
+				Пол - это лава
+			</RichCell>
+			<RichCell
+			caption="???"
+			after={<Button mode="outline" onClick={setActiveModal.bind(this, 'check_ans')}>Проверить ответ</Button>}>
+				???
+			</RichCell>
+		</Group>}
+		{/* <Button mode="outline" onClick={setActiveModal.bind(this, 'way')}>Маршрут</Button> */}
+	
+		{store.appUser.role == 3 && 
+			<Group header={<Header mode="secondary">Команды-участницы</Header>}>
+				<Cell disabled after={<Switch onClick={toggleShow}/>}>
+          			Отображать оценки
+        		</Cell>
+			{
+			teams.map(team => {
+				const leftTeam = team.rates.filter(rate => rate.org == store.appUser._id)
+				return (<RichCell
+					onClick={team.stage >= store.appUser.point?.num ? leftTeam.length ? () => {setActiveModal('editRate'); setRateTeam(team); setIdRate(leftTeam[0])} : () => { setActiveModal('rateTeam1'); setRateTeam(team)}: null}
+					caption={`группа ${team.group}`}
+					before={<Avatar style={{background: team?.color}} />}
+					after={team.stage >= store.appUser.point?.num ? leftTeam.length ? <Counter mode={isShow ? 'prominent' : 'primary'}>{isShow ? leftTeam[0].rate  : '-' }</Counter> : <Icon16Chevron style={{color: '#4BB34B'}}/> : <Icon16ClockCircleFill />}>
+					{team.name}
+				</RichCell>)
+				})
+			}
+		
+			</Group>
+		}
+		{store.homeSnackbar}
+		{snackbar}
 	</Panel>
+</View>
 )}));
 
 export default Home;
