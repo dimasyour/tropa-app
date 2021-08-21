@@ -6,6 +6,8 @@ import makeInspectable from 'mobx-devtools-mst';
 import io from 'socket.io-client'
 import bridge from '@vkontakte/vk-bridge'
 import { serverURL, access_token } from '../config'
+import { timeToDate } from '../utils/func';
+import Status from '../panels/Status';
 
 configure({ enforceActions: "always"})
 
@@ -20,12 +22,15 @@ class MainStore{
             vk_mates: observable,
             contestList: observable,
             socket: observable,
-            // homeSnackbar: observable,
+            socketStatus: observable,
+            currentTask: observable,
 
             teamStatus: computed,
             userRole: computed,
             activeContest: computed,
             teamContest: computed,
+            secToTeamContest: computed,
+            hashNextPoint: computed,
 
             setAppUser: action,
             setStatusApp: action,
@@ -34,7 +39,8 @@ class MainStore{
             togglePopout: action,
             getContestList: action,
             createConnection: action,
-            // setHomeSnackbar: action,
+            setSocketStatus: action,
+            setCurrentTask: action
         })
     }
 
@@ -46,28 +52,25 @@ class MainStore{
     appUser = null
     vk_mates = []
     contestList = []
-    homeSnackbar = null
+    socketStatus = null
+    currentTask = null
     
     
     socket = null
-    setHomeSnackbar = snackbar => this.homeSnackbar = snackbar
     createConnection = () => {
         this.socket = io("https://leton.cc/", {
             reconnectionDelayMax: 10000,
             query: {
-                "team": this.appUser.team._id
+                "team": this.appUser.team._id, 
+                "point": this.appUser.team.stage
             }
         });
         this.socket.on('connect', (data) => {
-			this.setHomeSnackbar(<Snackbar
-                onClose={() => this.setHomeSnackbar(null)}
-                before={<Avatar size={24} style={{ background: 'var(--accent)' }}><Icon16Done fill="#fff" width={14} height={14} /></Avatar>}
-              >
-             	Соединение с Тропой установлено
-              </Snackbar>)
+              this.setSocketStatus(<Status mode='success'>На связи</Status>)
 		})
 
 		this.socket.on('disconnect', (reason) =>{
+            this.setSocketStatus(<Status mode='danger'>Потеря соединения</Status>)
 			const reason_codes = [
 				{code: 'io server disconnect', reason: 'Отключён сервером'},
 				{code: 'io client disconnect', reason: 'Отключён клиентом'},
@@ -75,21 +78,19 @@ class MainStore{
 				{code: 'transport close', reason: 'Вы потеряли сеть либо изменили тип сети'},
 				{code: 'transport error', reason: 'Сервер не отвечает. Сообщите организаторам'},
 			]
-			this.setHomeSnackbar(<Snackbar
-                onClose={() => this.setHomeSnackbar(null)}
-                before={<Avatar size={24} style={{ background: 'var(--accent)' }}><Icon16ErrorCircle fill="#fff" width={14} height={14} /></Avatar>}
-              >
-             	{reason_codes.filter(code => code.code == reason).pop().reason}. Переподключаемся...
-              </Snackbar>)
+              this.setSocketStatus(<Status mode='warning'>Переподключаемся</Status>)
             setTimeout(() => { 
                 this.socket.connect()
             }, 3000)
 		})
         this.socket.on('connect_error', () => {
+            this.setSocketStatus(<Status mode='danger'>Ошибка подключения</Status>)
             setTimeout(() => { 
                 this.socket.connect()
             }, 1000)
         })
+
+        this.socket.on('init task', data => this.setCurrentTask(data.point))
     }
     
 
@@ -101,8 +102,8 @@ class MainStore{
 		}) : []
     }
 
-    
-
+    setCurrentTask = task => this.currentTask = task
+    setSocketStatus = status => this.socketStatus = status
     setAppUser = user => this.appUser = user
     setStatusApp = value => this.statusApp = value
     goPage = page => {
@@ -129,15 +130,20 @@ class MainStore{
     }
     updateAppUser = user => this.appUser = user
 
-
     get activeContest(){
         return this.appUser ? this.contestList.filter(contest => contest.status == 1).pop() 
         : {}
+    }
+    get hashNextPoint(){
+        return this.appUser.point.next.task.qrHash
     }
     get teamContest(){
         const user = this.appUser
         return user.team ? this.contestList.filter(contest => contest.institute == user.team.institute).pop() 
         : { e: 'empty'}
+    }
+    get secToTeamContest(){
+        return this.teamContest?.date ? timeToDate(this.teamContest.date) : null
     }
     get userRole(){
         const status = [
@@ -161,11 +167,14 @@ class MainStore{
     }
 
 }
+
 const mainStore = new MainStore()
 
 autorun(() => {
     mainStore.updateTeammates()
-    // mainStore.createConnection()
+    if(mainStore.appUser.team.stage){
+        mainStore.createConnection()
+    }
 })
 
 export default makeInspectable(mainStore)

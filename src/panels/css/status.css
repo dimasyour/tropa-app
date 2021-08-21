@@ -1,0 +1,44 @@
+.ant-badge{
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    color: #000000d9;
+    font-size: 14px;
+    font-variant: tabular-nums;
+    line-height: 1.5715;
+    list-style: none;
+    font-feature-settings: "tnum";
+    position: relative;
+    display: inline-block;
+    line-height: 1;
+}
+.ant-badge-status{
+    line-height: inherit;
+    vertical-align: baseline;
+}
+.ant-badge-status-dot{
+    position: relative;
+    top: -1px;
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    vertical-align: middle;
+    border-radius: 50%;
+}
+.status-default{
+    background-color: #d9d9d9;   
+}
+.status-success{
+    background-color: #52c41a;
+}
+.status-warning{
+    background-color: #faad14;
+}
+.status-danger{
+    background-color: #ff4d4f;
+}
+.ant-badge-status-text {
+    margin-left: 8px;
+    color: #000000d9;
+    font-size: 14px;
+}

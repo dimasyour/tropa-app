@@ -1,13 +1,12 @@
 const timeToDate = (date, from = new Date()) => {
+	date = new Date(date)
 	date.setHours(date.getHours() - 3)
 	const left = Math.floor(Math.abs(date - from) / 1000)
 	const d = Math.floor(left / 60 / 60 / 24)
 	const h = Math.floor(left / 60 / 60)
 	const m = Math.floor(left / 60)
 	const s = Math.floor(left)
-	return {
-		d, h, m, s 
-	}
+	return s
 }
 const timeFormat = (format, value) => {
 	const d = Math.floor(value / 60 / 60 / 24)

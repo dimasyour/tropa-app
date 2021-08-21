@@ -41,7 +41,7 @@ const App = () => {
 				// document.body.attributes.setNamedItem(schemeAttribute);
 			}
 		});
-		bridge.send("VKWebAppSetViewSettings", {"status_bar_style": theme == 'bright_light' ? "light" : 'dark', "action_bar_color": theme == 'bright_light' ? "#fff" : '#000'});
+		bridge.send("VKWebAppSetViewSettings", {"status_bar_style": theme == 'bright_light' ? "light" : 'dark', "action_bar_color": theme == 'bright_light' ? "#666666" : '#191919'});
 		async function fetchData() {
 			const user = await bridge.send('VKWebAppGetUserInfo');
 			store.setVkU(user)
@@ -148,6 +148,7 @@ const App = () => {
 							<Home id='home'/>
 							<MyTeam id='team'/>
 							<Tasks id='tasks'/>
+							{store.mainSnackbar}
 						</Epic>
 					</Provider>
 				</AppRoot>

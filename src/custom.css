@@ -6,8 +6,10 @@ body[scheme="bright_light"]{
     --tabbar_inactive_icon: #99A2AD;
     --button_outline_border: #259525;
     --button_outline_foreground: #259525;
+    --task_card_background: #fff;
 }
 body[scheme="space_gray"]{
     --button_outline_border: #E1E3E6;
     --button_outline_foreground: #E1E3E6;
+    --task_card_background: #2C2D2E;
 }

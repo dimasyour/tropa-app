@@ -1,16 +1,17 @@
 import React, { useState, useEffect, Fragment, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { inject, observer } from 'mobx-react'
-import { Panel, Avatar, Header, PanelHeader, Snackbar, PanelHeaderClose, Counter, FormItem, Div, Button, Cell, Switch, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, ViewWidth, RichCell, View, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, FormLayout, Radio, Input, Text } from '@vkontakte/vkui';
+import { Panel, Avatar, Header, PanelHeader, Snackbar, PanelHeaderClose, Counter, FormItem, Div, Button, Cell, Switch, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, ViewWidth, RichCell, Caption, View, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, FormLayout, Radio, Input, Text } from '@vkontakte/vkui';
 import { timeToDate, timeFormat, getDate, declOfNum } from '../utils/func';
 import { Icon28QrCodeOutline } from '@vkontakte/icons';
 import { Icon16Done, Icon16ErrorCircle, Icon24Cancel, Icon24Done } from '@vkontakte/icons';
-import { Icon16ClockCircleFill } from '@vkontakte/icons';
 import { Icon16Chevron } from '@vkontakte/icons';
+import Status from './Status'
 
 import { serverURL } from '../config'
 import Way from './Way';
 import Labirint from '../icons/Labirint'
+import TaskCard from './components/TaskCard'
 import QRCode from 'react-qr-code'
 
 import bridge from '@vkontakte/vk-bridge'
@@ -20,11 +21,9 @@ const Home = inject('store')(observer(({ id, store }) => {
 	const platform = usePlatform()
 	const { viewWidth } = useAdaptivity();
 	const isMobile = viewWidth <= ViewWidth.MOBILE;
-	const [ timerValue, updateTimerValue ] = useState(0)
 	const [ activeModal, setActiveModal ] = useState(null)
 	const [ snackbar, setSnackbar ] = useState(null)
 	const [ teams, setTeams ] = useState([])
-	const timerHTML = <div>{timerValue ? timeFormat('dd дн. hh:mm:ss', timerValue) : ''}</div>
 
 	const [ rateTeam, setRateTeam ] = useState(null)
 
@@ -36,20 +35,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 	idRateRef.current = idRate
 
 	const [ isShow, setIsShow ] = useState(false)
-	useEffect(() => {
-		if(!store.appUser.team.start){
-			const interval = setInterval(() => {
-				if(timerValue == 0){
-					clearInterval(interval)
-					return
-				}
-				updateTimerValue(timerValue - 1)
-			}, 1000)
-			return () => {
-				clearInterval(interval)
-			}
-		}
-	}, [timerValue])
+	
 	useEffect(() => {
 		axios.get( serverURL + 'teams', { 
 			params: { type: 2 }
@@ -57,6 +43,9 @@ const Home = inject('store')(observer(({ id, store }) => {
 			setTeams(data.data.teams)
 		})
 	}, [])
+	useEffect(() => {
+	}, [store.teamContest])
+
 
 
 	const snackbarOk = text => {
@@ -128,6 +117,15 @@ const Home = inject('store')(observer(({ id, store }) => {
 	const onChangeComment = e => {
 		setComment(e.target.value)
 	}
+	const readyForStart = () => {
+		setActiveModal(null)
+		axios.get( serverURL + 'teams/start', {
+			params: {
+				teamId: store.appUser.team._id
+			}
+		}).then(data => snackbarOk(data.data.text))
+		.catch(err => snackbarErr(err.error_data.text))
+	}
 	const toggleShow = () => setIsShow(!isShow)
 	const modalRoot = (<ModalRoot activeModal={activeModal}>
 		<ModalPage
@@ -140,12 +138,6 @@ const Home = inject('store')(observer(({ id, store }) => {
 				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}><Icon24Cancel /></PanelHeaderButton>}
 				</Fragment>
 			  )}
-			  right={(
-				<Fragment>
-				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}><Icon24Done /></PanelHeaderButton>}
-				  {platform === IOS && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}>Готово</PanelHeaderButton>}
-				</Fragment>
-			  )}
 		  >
 			Напутствие
 		  </ModalPageHeader>} >
@@ -153,7 +145,12 @@ const Home = inject('store')(observer(({ id, store }) => {
 				Правила забега
 			</FormItem>
 			<FormItem>
-				<Button stretched mode="primary">Готовы начать</Button>
+				{store.appUser.team.allow ? 
+				<Button stretched  onClick={readyForStart} mode="primary">Готовы начать</Button> 
+				: <>
+				 <Caption level="2" weight="semibold" caps style={{ marginBottom: 16 }}>Подойдите к организаторам</Caption>
+				 <Button stretched mode="primary" disabled>Готовы начать</Button> 
+				</> }
 			</FormItem>
 		</ModalPage>
 		<ModalPage
@@ -180,7 +177,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 					QR-code для команды "{rateTeam?.name}" для следующей точки
 				</Div>
 				<Div style={{background: "white", padding: '10px', margin: '0 auto', borderRadius: "6px", textAlign: 'center'}} >
-					<QRCode value={'kekovina'} size={250}/>
+					{ store.hashNextPoint && <QRCode value={store.hashNextPoint} size={250}/> }
 				</Div>
 			</Div>
 		</ModalPage>
@@ -234,9 +231,9 @@ const Home = inject('store')(observer(({ id, store }) => {
 						))}
             		</FormItem>
 					<FormItem top="Старый комментарий">
-						<Text>{idRateRef.current?.comment ?? 'отсутствует'}</Text>
+						<Text>{idRateRef.current?.comment.length ? idRateRef.current.comment.pop() : 'отсутствует'}</Text>
             		</FormItem>
-					<FormItem top="Комментарий(добавьте к комментарию причину изменения)">
+					<FormItem top="Причина изменения">
 						<Input name="comment" onChange={onChangeComment}/>
             		</FormItem>
 					<FormItem>
@@ -283,7 +280,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 
 		<View id="home" activePanel="home" modal={modalRoot}>
 								<Panel id={id}>
-		<PanelHeader >Тропа первака 2021 </PanelHeader>
+		<PanelHeader >Тропа первака 2021  </PanelHeader>
 
 
 
@@ -300,12 +297,12 @@ const Home = inject('store')(observer(({ id, store }) => {
 
 
 
-		{!store.appUser.team.start &&store.appUser.team && store.appUser.role < 2 && <Group header={<Header mode="secondary">Ваша тропа</Header>}>
+		{!store.appUser.team.startAt &&store.appUser.team && store.appUser.role < 2 && <Group header={<Header mode="secondary">Ваша тропа</Header>}>
 			{store.teamContest && <RichCell
 			key={store.teamContest._id}
 			before={<div style={{display: 'flex', alignItems: 'center', marginRight: 10}}><Labirint/></div>}
 			caption={getDate(store.teamContest.date)}
-			after={store.activeContest?.status ? <Button mode="outline" onClick={setActiveModal.bind(this, 'rules')}>Начать забег</Button> : timerValue}>
+			after={store.appUser.team.stage == 0 ? store.teamContest.status ? store.appUser.role == 1 ? <Button mode="outline" onClick={setActiveModal.bind(this, 'rules')}>Начать забег</Button> : '' : timeFormat('dd дн. hh ч.',store.secToTeamContest) : '-'}>
 				{store.teamContest.name}
 			</RichCell>}
 		</Group>
@@ -324,16 +321,10 @@ const Home = inject('store')(observer(({ id, store }) => {
 
 
 		{store.appUser.role < 3 && <Group header={<Header mode="secondary">Текущее задание</Header>}>
-			<RichCell
-			caption="12 корпус"
-			after={<Icon28QrCodeOutline onClick={readQR}/>}>
-				Пол - это лава
-			</RichCell>
-			<RichCell
-			caption="???"
-			after={<Button mode="outline" onClick={setActiveModal.bind(this, 'check_ans')}>Проверить ответ</Button>}>
-				???
-			</RichCell>
+
+			{store.currentTask && <TaskCard title={!store.appUser.team.substage ? '???' : store.currentTask?.title} text={!store.appUser.team.substage ? store.currentTask?.text : store.currentTask?.text2}  fileID={!store.appUser.team.substage ? store.currentTask?.task.static : null} >
+				{!store.appUser.team.substage ? <Button mode="outline" onClick={setActiveModal.bind(this, 'check_ans')} stretched >Проверить ответ</Button> : <Button mode="outline" onClick={readQR} stretched>Сканировать QR</Button>}
+			</TaskCard>}
 		</Group>}
 		{/* <Button mode="outline" onClick={setActiveModal.bind(this, 'way')}>Маршрут</Button> */}
 	
@@ -349,7 +340,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 					onClick={team.stage >= store.appUser.point?.num ? leftTeam.length ? () => {setActiveModal('editRate'); setRateTeam(team); setIdRate(leftTeam[0])} : () => { setActiveModal('rateTeam1'); setRateTeam(team)}: null}
 					caption={`группа ${team.group}`}
 					before={<Avatar style={{background: team?.color}} />}
-					after={team.stage >= store.appUser.point?.num ? leftTeam.length ? <Counter mode={isShow ? 'prominent' : 'primary'}>{isShow ? leftTeam[0].rate  : '-' }</Counter> : <Icon16Chevron style={{color: '#4BB34B'}}/> : <Icon16ClockCircleFill />}>
+					after={team.stage >= store.appUser.point?.num ? leftTeam.length ? <Counter mode={isShow ? 'prominent' : 'primary'}>{isShow ? leftTeam[0].rate  : '-' }</Counter> : <Icon16Chevron style={{color: '#4BB34B'}}/> : null}>
 					{team.name}
 				</RichCell>)
 				})

@@ -10,6 +10,7 @@ import { serverURL } from '../config';
 import bridge from '@vkontakte/vk-bridge';
 
 import { View, Panel, CellButton, Header, Group, Cell, Text, Avatar, List, RichCell, Alert, HorizontalCell, HorizontalScroll, PanelHeader, FormLayout, FormItem, Input, Button, Snackbar } from '@vkontakte/vkui';
+import Status from './Status';
 
 const MyTeam = inject('store')(observer(({ id, store }) => {
     const [newName, setNewName] = useState(store.appUser.team.name)
@@ -165,6 +166,12 @@ const MyTeam = inject('store')(observer(({ id, store }) => {
                     </div>
                 </HorizontalScroll>
             </Group>
+            {store.socket ? <Group>
+                <Cell after={store.socketStatus}>
+                    Статус сервера
+                </Cell>
+            </Group> : null}
+            
             {store.activeContest?.institute != store.appUser.team.institute && store.appUser.role == 1 &&  store.appUser.team.status < 2 && <Group header={<Header mode="secondary">Основная информация</Header>}>
                 <FormLayout>
                     {store.appUser.team.status == 1 && <FormItem>
