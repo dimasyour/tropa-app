@@ -29,7 +29,10 @@ const Home = inject('store')(observer(({ id, store }) => {
 
 	const [ idRate, setIdRate ] = useState(null)
 	const [ comment, setComment ] = useState('')
+	const [ answer, setAnswer ] = useState('')
 	const [ rate, setRate ] = useState(0)
+	const [ showFailure, setShowFailure ] = useState(false)
+	const [ showComplete, setShowComplete ] = useState(false)
 
 	const idRateRef = useRef()
 	idRateRef.current = idRate
@@ -117,6 +120,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 	const onChangeComment = e => {
 		setComment(e.target.value)
 	}
+	const onChangeAnswer = e => setAnswer(e.target.value)
 	const readyForStart = () => {
 		setActiveModal(null)
 		axios.get( serverURL + 'teams/start', {
@@ -125,6 +129,25 @@ const Home = inject('store')(observer(({ id, store }) => {
 			}
 		}).then(data => snackbarOk(data.data.text))
 		.catch(err => snackbarErr(err.error_data.text))
+	}
+	const checkAnswer = e => {
+		setActiveModal(null)
+		store.socket.emit('check_ans', {
+			ans: answer,
+			team: store.appUser.team._id
+		})
+		store.socket.on('check_ans_server', data => {
+			if(data.ans){
+				setShowComplete(true)
+			} else {
+				setShowFailure(true)
+			}
+			setTimeout(() => {
+				setShowComplete(false)
+				setShowFailure(false)
+			}, 5000)
+		})
+		setAnswer('')
 	}
 	const toggleShow = () => setIsShow(!isShow)
 	const modalRoot = (<ModalRoot activeModal={activeModal}>
@@ -265,15 +288,28 @@ const Home = inject('store')(observer(({ id, store }) => {
 		</ModalPage>
 		<ModalPage
 		id="check_ans"
-		settlingHeight={100}
+		// settlingHeight={50}
 		onClose={setActiveModal.bind(this, null)}
 		header={<ModalPageHeader
-			right={platform === IOS && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}><Icon16Done/></PanelHeaderButton>}
-			left={isMobile && platform === ANDROID && <PanelHeaderClose onClick={setActiveModal.bind(this, null)}/>}
+			left={(
+				<Fragment>
+				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}><Icon24Cancel /></PanelHeaderButton>}
+				</Fragment>
+			  )}
+			  right={(
+				<Fragment>
+				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton disabled={!answer} onClick={checkAnswer}><Icon24Done /></PanelHeaderButton>}
+				  {platform === IOS && <PanelHeaderButton disabled={!answer} onClick={checkAnswer}>Готово</PanelHeaderButton>}
+				</Fragment>
+			  )}
 		  >
 			Проверка ответа
 		  </ModalPageHeader>} >
-			Кек
+			<FormLayout>
+				<FormItem top="Ваш вариант ответа">
+					<Input onChange={onChangeAnswer}/>
+				</FormItem>
+			</FormLayout>
 		</ModalPage>
 	</ModalRoot>)
 	return (
@@ -322,7 +358,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 
 		{store.appUser.role < 3 && <Group header={<Header mode="secondary">Текущее задание</Header>}>
 
-			{store.currentTask && <TaskCard title={!store.appUser.team.substage ? '???' : store.currentTask?.title} text={!store.appUser.team.substage ? store.currentTask?.text : store.currentTask?.text2}  fileID={!store.appUser.team.substage ? store.currentTask?.task.static : null} >
+			{store.currentTask && <TaskCard isComplete={showComplete} isFailure={showFailure} title={!store.appUser.team.substage ? '???' : store.currentTask?.title} text={!store.appUser.team.substage ? store.currentTask?.text : store.currentTask?.text2}  fileID={!store.appUser.team.substage ? store.currentTask?.task.static : null} >
 				{!store.appUser.team.substage ? <Button mode="outline" onClick={setActiveModal.bind(this, 'check_ans')} stretched >Проверить ответ</Button> : <Button mode="outline" onClick={readQR} stretched>Сканировать QR</Button>}
 			</TaskCard>}
 		</Group>}

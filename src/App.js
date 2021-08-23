@@ -36,12 +36,9 @@ const App = () => {
 			if (type === 'VKWebAppUpdateConfig') {
 				const theme = data.scheme ? data.scheme : 'client_light';
 				setTheme(theme)
-				// const schemeAttribute = document.createAttribute('scheme');
-				// schemeAttribute.value = theme
-				// document.body.attributes.setNamedItem(schemeAttribute);
 			}
 		});
-		bridge.send("VKWebAppSetViewSettings", {"status_bar_style": theme == 'bright_light' ? "light" : 'dark', "action_bar_color": theme == 'bright_light' ? "#666666" : '#191919'});
+		bridge.send("VKWebAppSetViewSettings", {"status_bar_style": theme == 'bright_light' ? "light" : 'dark', "action_bar_color": theme == 'bright_light' ? "#fff" : '#191919'});
 		async function fetchData() {
 			const user = await bridge.send('VKWebAppGetUserInfo');
 			store.setVkU(user)
@@ -49,7 +46,6 @@ const App = () => {
 		}
 		fetchData().then(data => {
 			store.getAppUser(data).then((res) => {
-				// store.setAppUser(res.data.user)
 				if(res.data.user.team){
 					store.goPage('home')
 				} else {

@@ -83,6 +83,7 @@ class MainStore{
                 this.socket.connect()
             }, 3000)
 		})
+        this.socket.on('update_team', data => console.log(data))
         this.socket.on('connect_error', () => {
             this.setSocketStatus(<Status mode='danger'>Ошибка подключения</Status>)
             setTimeout(() => { 
