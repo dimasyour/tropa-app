@@ -83,7 +83,9 @@ class MainStore{
                 this.socket.connect()
             }, 3000)
 		})
-        this.socket.on('update_team', data => console.log(data))
+        this.socket.on('update_team', data => {
+            this.getAppUser()
+        })
         this.socket.on('connect_error', () => {
             this.setSocketStatus(<Status mode='danger'>Ошибка подключения</Status>)
             setTimeout(() => { 
@@ -94,8 +96,6 @@ class MainStore{
         this.socket.on('init task', data => this.setCurrentTask(data.point))
     }
     
-
-
     updateTeammates = () => {
         this.appUser.team ? 
 		bridge.send("VKWebAppCallAPIMethod", {"method": "users.get", "params": {"user_ids": this.appUser.team.mates.map(mate => mate.uid).filter(mate => mate.uid != this.vk_u.id).join(','), "v":"5.131", "access_token": access_token, "fields": "photo_200"}}).then(data => {
@@ -117,7 +117,7 @@ class MainStore{
         return axios.get(serverURL + 'users/create', {
             params:{
                 uid: this.vk_u.id,
-                vkUser: this.vk_u
+                vkUser: this.vk_u.first_name + ' ' + this.vk_u.last_name,
             }
         }).then(res => {
             this.appUser = res.data.user
@@ -136,7 +136,7 @@ class MainStore{
         : {}
     }
     get hashNextPoint(){
-        return this.appUser.point.next.task.qrHash
+        return this.appUser?.point?.next?.task.qrHash ?? 'kjdhsl;'
     }
     get teamContest(){
         const user = this.appUser
@@ -159,10 +159,10 @@ class MainStore{
     }
     get teamStatus(){
         const status = [
+            'отклонена',
             'отложена',
             'на рассмотрении',
-            'подтверждена',
-            'отклонена'
+            'подтверждена'
         ]
         return status[this.appUser.team.status]
     }
@@ -177,5 +177,4 @@ autorun(() => {
         mainStore.createConnection()
     }
 })
-
 export default makeInspectable(mainStore)

@@ -61,3 +61,65 @@
     display: flex;
     transition: opacity 1s ease-out;
 }
+
+.task-content-placeholder{
+    height: 100px;
+    overflow: hidden;
+    position: relative;
+    
+   
+}
+.task-title-placeholder{
+    animation-duration: 1.7s;
+    animation-fill-mode: forwards;
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+    animation-name: placeholderAnimate;
+    background: var(--placeholder_background); 
+    background: var(--placeholder_animation);
+    background-size: 800px; 
+    width: 30%;
+    position: absolute;
+    top: 10px;
+    left: 15px;
+    height: 16px
+}
+.task-text-placeholder{
+    animation-duration: 1.7s;
+    animation-fill-mode: forwards;
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+    animation-name: placeholderAnimate;
+    background: var(--placeholder_background); 
+    background: var(--placeholder_animation);
+    background-size: 800px; 
+    width: calc( 100% - 30px );
+    position: absolute;
+    top: 35px;
+    left: 15px;
+    height: 14px
+}
+.task-text-placeholder#d2{
+    top: 55px;
+    left: 15px;
+}
+.task-btn-placeholder{
+    animation-duration: 1.7s;
+    animation-fill-mode: forwards;
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+    animation-name: placeholderAnimate;
+    background: var(--placeholder_background); 
+    background: var(--placeholder_animation);
+    background-size: 800px; 
+    width: calc( 100% - 30px );
+    position: absolute;
+    top: 80px;
+    left: 15px;
+    height: 28px;
+    border-radius: 8px;
+}
+@keyframes placeholderAnimate {
+    0%{ background-position: -400px 0; }
+    100%{ background-position: 400px 0; }
+}

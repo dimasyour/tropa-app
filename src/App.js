@@ -9,6 +9,7 @@ import { Icon24Home,
 	Icon28CalendarOutline,
 	Icon28UserCircleOutline } from '@vkontakte/icons'
 	import { Icon24RobotOutline } from '@vkontakte/icons';
+	import { Icon28CompassOutline } from '@vkontakte/icons';
 
 import Home from './panels/Home';
 import Hello from './panels/Hello'
@@ -30,15 +31,19 @@ const App = () => {
 	const [theme, setTheme] = useState('client_light')
 
   	const onStoryChange = (e) => store.goPage(e.currentTarget.dataset.story);
+	  
+	bridge.send("VKWebAppInit", {});
 	useEffect(() => {
-		bridge.send("VKWebAppInit", {});
 		bridge.subscribe(({ detail: { type, data }}) => {
 			if (type === 'VKWebAppUpdateConfig') {
 				const theme = data.scheme ? data.scheme : 'client_light';
 				setTheme(theme)
 			}
 		});
-		bridge.send("VKWebAppSetViewSettings", {"status_bar_style": theme == 'bright_light' ? "light" : 'dark', "action_bar_color": theme == 'bright_light' ? "#fff" : '#191919'});
+		bridge.send("VKWebAppSetViewSettings", theme == "client_light" ? {"status_bar_style": 'light', "status_bar_color": "#191919"} : {"status_bar_style": 'dark', "status_bar_color": "#ffffff"} );
+	}, [theme])
+	useEffect(() => {
+		
 		async function fetchData() {
 			const user = await bridge.send('VKWebAppGetUserInfo');
 			store.setVkU(user)
@@ -56,7 +61,6 @@ const App = () => {
 		})
 	}, []);
 	const menu = e => {
-		console.log(e.state)
 		if(e.state){
 			if((store.activePage == 'home' && e.state.panel == 'start') || (store.activePage == 'home' && e.state.panel == 'reg')){
 				window.history.pushState( { panel: 'home'}, `home` )
@@ -102,7 +106,7 @@ const App = () => {
 								selected={store.activePage === 'home'}
 								data-story="home"
 								text="Главная"
-								><Icon24Home /></TabbarItem>
+								><Icon28CompassOutline/></TabbarItem>
 								{ store.appUser.team && store.appUser.role < 3 &&
 									<TabbarItem
 								onClick={onStoryChange}
@@ -131,9 +135,8 @@ const App = () => {
 							<View id="reg" activePanel="reg">
 								<RegTeam id='reg'/>
 							</View>
-							<View id="admin" activePanel="admin">
-								<AdminMenu id='admin'/>
-							</View>
+							
+								
 							
 							<View id="contestList" activePanel="contestList">
 								<ContestList id='contestList'/>
@@ -141,9 +144,12 @@ const App = () => {
 							<View id="teamList" activePanel="teamList">
 								<TeamList id='teamList'/>
 							</View>
+
+							
 							<Home id='home'/>
 							<MyTeam id='team'/>
 							<Tasks id='tasks'/>
+							<AdminMenu id='admin'/>
 							{store.mainSnackbar}
 						</Epic>
 					</Provider>

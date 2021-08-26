@@ -4,7 +4,7 @@ function Icons() {
   return(
     <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink">
       <rect width="48" height="48" rx="6" fill="url(#pattern0)"/>
-      <rect x="0.25" y="0.25" width="47.5" height="47.5" rx="5.75" stroke="black" stroke-opacity="0.08" stroke-width="0.5"/>
+      <rect x="0.25" y="0.25" width="47.5" height="47.5" rx="5.75" stroke="black" strokeOpacity="0.08" strokeWidth="0.5"/>
       <defs>
         <pattern id="pattern0" patternContentUnits="objectBoundingBox" width="1" height="1">
         <use xlinkHref="#image0" transform="translate(0 -0.00242718) scale(0.00485437)"/>

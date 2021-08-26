@@ -1,3 +1,6 @@
+import { Snackbar, Avatar } from '@vkontakte/vkui'
+import { Icon16Done, Icon16ErrorCircle} from '@vkontakte/icons'
+
 const timeToDate = (date, from = new Date()) => {
 	date = new Date(date)
 	date.setHours(date.getHours() - 3)
@@ -30,4 +33,21 @@ const getDate = (date) => {
 	return `${d.getDate()} ${months[d.getMonth()]}, ${day[d.getDay()]}`
 }
 
-module.exports = { timeToDate, timeFormat, declOfNum, getDate }
+const snackbarOk = text => {
+	return (<Snackbar
+		onClose={() => setSnackbar(null)}
+		before={<Avatar size={24} style={{ background: 'var(--accent)' }}><Icon16Done fill="#fff" width={14} height={14} /></Avatar>}
+		>
+			{text}
+		</Snackbar>)
+}
+const snackbarErr = text => {
+	return (<Snackbar
+		onClose={() => setSnackbar(null)}
+		before={<Avatar size={24} style={{ background: 'var(--accent)' }}><Icon16ErrorCircle fill="#fff" width={14} height={14} /></Avatar>}
+	  >
+		 {text}
+	  </Snackbar>)
+}
+
+export { timeToDate, timeFormat, declOfNum, getDate, snackbarOk, snackbarErr }

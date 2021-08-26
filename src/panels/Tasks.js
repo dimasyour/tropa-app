@@ -80,7 +80,7 @@ const Tasks = inject('store')(observer(({ id, store }) => {
 		<ModalPage
 		id="edit_point"
 		settlingHeight={100}
-		onClose={setActiveModal.bind(this, null)}
+		onClose={setActiveModal.bind(this, {modal: null, point: null})}
 		header={<ModalPageHeader
 			right={osName === IOS && <PanelHeaderButton onClick={setActiveModal.bind(this, {modal: null, point: null})}><Icon24Dismiss/></PanelHeaderButton>}
 			left={isMobile && osName === ANDROID && <PanelHeaderClose onClick={setActiveModal.bind(this, {modal: null, point: null})}/>}
@@ -136,7 +136,6 @@ const Tasks = inject('store')(observer(({ id, store }) => {
 	useEffect(() => {
 		store.togglePopout()
 		axios(serverURL + 'points').then(res => {
-			console.log(res.data)
 			setPoints(res.data.points)
 		}).then(() => {
 			axios.get(serverURL + 'tasks').then(res => {
@@ -158,6 +157,7 @@ const Tasks = inject('store')(observer(({ id, store }) => {
 			</PanelHeader>
 			{points.error && <div>Возникла следующая ошибка: {points.err}</div>}
 			{!pointsRef.current.error && pointsRef.current.map(point => (<RichCell
+			key={point.num}
 			text={point.task?.title ?? 'задание не указано'}
 			caption={point.location}
 			onClick={setActiveModal.bind(this, {modal: 'edit_point', point})}

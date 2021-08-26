@@ -6,7 +6,7 @@ import { Panel } from '@vkontakte/vkui';
 
 const Hello = inject('store')(observer(({ id, store }) => {
 	return (<Panel id={id}>
-		<div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', height: '100vh'}}>
+		<div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', height: '90vh'}}>
             <span>Загружаем приложение...</span>
         </div>
 	</Panel>

@@ -1,11 +1,10 @@
 import React, { useState, useEffect, Fragment, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { inject, observer } from 'mobx-react'
-import { Panel, Avatar, Header, PanelHeader, Snackbar, PanelHeaderClose, Counter, FormItem, Div, Button, Cell, Switch, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, ViewWidth, RichCell, Caption, View, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, FormLayout, Radio, Input, Text } from '@vkontakte/vkui';
+import { Panel, Avatar, Header, PanelHeader, Snackbar, ModalCard, Counter, FormItem, Div, Button, Cell, Switch, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, ViewWidth, RichCell, Caption, View, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, FormLayout, Radio, Input, Text } from '@vkontakte/vkui';
 import { timeToDate, timeFormat, getDate, declOfNum } from '../utils/func';
 import { Icon28QrCodeOutline } from '@vkontakte/icons';
-import { Icon16Done, Icon16ErrorCircle, Icon24Cancel, Icon24Done } from '@vkontakte/icons';
-import { Icon16Chevron } from '@vkontakte/icons';
+import { Icon16Done, Icon16ErrorCircle, Icon24Cancel, Icon24Done, Icon24BrainOutline, Icon24ScanViewfinderOutline, Icon28Flash, Icon16Chevron } from '@vkontakte/icons';
 import Status from './Status'
 
 import { serverURL } from '../config'
@@ -16,6 +15,7 @@ import QRCode from 'react-qr-code'
 
 import bridge from '@vkontakte/vk-bridge'
 import axios from 'axios';
+import ReactPlayer from 'react-player';
 
 const Home = inject('store')(observer(({ id, store }) => {
 	const platform = usePlatform()
@@ -72,7 +72,19 @@ const Home = inject('store')(observer(({ id, store }) => {
 	const readQR = () => {
 		bridge.send("VKWebAppOpenCodeReader").then(res => {
 			const { code_data } = res
-			snackbarOk(code_data)
+			store.socket.emit('qrcode', {qrHash: code_data, stage: store.appUser.team.stage, team: store.appUser.team._id})
+			store.socket.on('qrcode_response', data => {
+				if(data.response == 20){
+					store.getAppUser()
+					return setActiveModal('endgame')
+				}
+				if(data.response){
+					snackbarOk('Верный QR')
+					store.getAppUser()
+				} else {
+					snackbarErr('QR не подходит')
+				}
+			})
 		}).catch(err => {
 			if(err.error_type == "client_error"){
 				snackbarErr(err.error_data.error_reason)
@@ -138,19 +150,33 @@ const Home = inject('store')(observer(({ id, store }) => {
 		})
 		store.socket.on('check_ans_server', data => {
 			if(data.ans){
-				setShowComplete(true)
+				snackbarOk('Правильный ответ!')
 			} else {
-				setShowFailure(true)
+				snackbarErr('Подумайте ещё')
 			}
-			setTimeout(() => {
-				setShowComplete(false)
-				setShowFailure(false)
-			}, 5000)
+			// setTimeout(() => {
+			// 	setShowComplete(false)
+			// 	setShowFailure(false)
+			// }, 5000)
 		})
 		setAnswer('')
 	}
 	const toggleShow = () => setIsShow(!isShow)
-	const modalRoot = (<ModalRoot activeModal={activeModal}>
+	const modalRoot =  store.appUser.team ? (<ModalRoot activeModal={activeModal}>
+		<ModalCard
+          id="endgame"
+          onClose={() => this.setActiveModal(null)}
+          icon={<Icon28Flash />}
+          header="Последняя точка"
+          subheader="Это была ваша последняя точка, бегите на финиш!"
+          actions={
+            <Button size="l" mode="primary" onClick={setActiveModal.bind(this, null)}>
+              Спасибо!
+            </Button>
+          }
+        >
+
+        </ModalCard>
 		<ModalPage
 		id="rules"
 		settlingHeight={100}
@@ -311,7 +337,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 				</FormItem>
 			</FormLayout>
 		</ModalPage>
-	</ModalRoot>)
+	</ModalRoot>) : null
 	return (
 
 		<View id="home" activePanel="home" modal={modalRoot}>
@@ -332,8 +358,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 
 
 
-
-		{!store.appUser.team.startAt &&store.appUser.team && store.appUser.role < 2 && <Group header={<Header mode="secondary">Ваша тропа</Header>}>
+		{ store.appUser.team && !store.appUser?.team.startAt && store.appUser.role < 2 && <Group header={<Header mode="secondary">Ваша тропа</Header>}>
 			{store.teamContest && <RichCell
 			key={store.teamContest._id}
 			before={<div style={{display: 'flex', alignItems: 'center', marginRight: 10}}><Labirint/></div>}
@@ -356,12 +381,13 @@ const Home = inject('store')(observer(({ id, store }) => {
 
 
 
-		{store.appUser.role < 3 && <Group header={<Header mode="secondary">Текущее задание</Header>}>
+		{store.appUser.team && store.appUser.team.startAt && store.appUser.role < 3 && store.appUser?.team.stage != 20 && <Group header={<Header mode="secondary">Текущее задание</Header>}>
 
-			{store.currentTask && <TaskCard isComplete={showComplete} isFailure={showFailure} title={!store.appUser.team.substage ? '???' : store.currentTask?.title} text={!store.appUser.team.substage ? store.currentTask?.text : store.currentTask?.text2}  fileID={!store.appUser.team.substage ? store.currentTask?.task.static : null} >
-				{!store.appUser.team.substage ? <Button mode="outline" onClick={setActiveModal.bind(this, 'check_ans')} stretched >Проверить ответ</Button> : <Button mode="outline" onClick={readQR} stretched>Сканировать QR</Button>}
+			{<TaskCard isComplete={showComplete} isFailure={showFailure} title={!store.appUser.team.substage ? '???' : store.currentTask?.title} text={!store.appUser.team.substage ? store.currentTask?.text : store.currentTask?.text2}  fileID={!store.appUser.team.substage ? store.currentTask?.task.static : null} >
+				{!store.appUser.team.substage ? <Button before={<Icon24BrainOutline width={20} height={20}/>} mode="outline" onClick={setActiveModal.bind(this, 'check_ans')} stretched >Проверить ответ</Button> : <Button before={<Icon24ScanViewfinderOutline width={20} height={20}/>} mode="outline" onClick={readQR} stretched>Сканировать QR</Button>}
 			</TaskCard>}
 		</Group>}
+
 		{/* <Button mode="outline" onClick={setActiveModal.bind(this, 'way')}>Маршрут</Button> */}
 	
 		{store.appUser.role == 3 && 
@@ -384,6 +410,11 @@ const Home = inject('store')(observer(({ id, store }) => {
 		
 			</Group>
 		}
+		{store.appUser.team && store.appUser?.team.stage == 20 && <div>
+			Вы на стадии финальной точки. Подойдите к организаторам
+		</div>}
+		
+		{/* <ReactPlayer url={"https://www.youtube.com/watch?v=AeDJ9WqpKh4"}/> */}
 		{store.homeSnackbar}
 		{snackbar}
 	</Panel>

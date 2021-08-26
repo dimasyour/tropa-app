@@ -7,9 +7,13 @@ body[scheme="bright_light"]{
     --button_outline_border: #259525;
     --button_outline_foreground: #259525;
     --task_card_background: #fff;
+    --placeholder_background: #f6f7f8;
+    --placeholder_animation: linear-gradient(to right, #eee 2%, #ddd 18%, #eee 33%);
 }
 body[scheme="space_gray"]{
     --button_outline_border: #E1E3E6;
     --button_outline_foreground: #E1E3E6;
     --task_card_background: #2C2D2E;
+    --placeholder_animation: linear-gradient(to right, #232324 2%, #363738 18%, #232324 33%); 
+    --placeholder_background: #1b1c1d;
 }
