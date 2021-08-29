@@ -14,77 +14,12 @@ import { getTime, timeToDate, timeFormat, declOfNum } from '../utils/func';
 const AdminMenu = inject('store')(observer(({ id, store }) => {
     const platform = usePlatform('')
     const [searchInput, setSearchInput] = useState('')
-    const [activeModal, setActiveModal] = useState('searchTeam_rates')
+    const [activeModal, setActiveModal] = useState(null)
     const [usersFound, setUsersFound] = useState([])
     const [teamsFound, setTeamsFound] = useState([])
     const [snackbar, setSnackbar] = useState(null)
     const [selectedUser, setSelectedUser] = useState(null)
-    const [selectedTeam, setSelectedTeam] = useState({
-        "mates": [
-          {
-            "role": 2,
-            "_id": "6127e241e8dd440171a31b0f",
-            "uid": 503012833,
-            "vkUser": "Антон Азаров",
-            "__v": 0,
-            "team": "6127e2f1e8dd440171a31b18",
-            "point": null
-          },
-          {
-            "role": 0,
-            "_id": "6127dc143fc0afe4085b11d3",
-            "uid": 188766453,
-            "__v": 0,
-            "team": "6127e2f1e8dd440171a31b18",
-            "vkUser": "Паша Тюкавин"
-          }
-        ],
-        "status": 3,
-        "stage": 2,
-        "substage": 1,
-        "allow": true,
-        "rates": [
-          {
-            "comment": [
-              "1212",
-              "Кек"
-            ],
-            "_id": "612bae1b83376b062d7eeb45",
-            "team": "6127e2f1e8dd440171a31b18",
-            "rate": 1,
-            "org": {
-              "role": 2,
-              "_id": "6127e241e8dd440171a31b0f",
-              "uid": 503012833,
-              "vkUser": "Антон Азаров",
-              "__v": 0,
-              "team": "6127e2f1e8dd440171a31b18",
-              "point": null
-            },
-            "point": "Хвост",
-            "updatedAt": "2021-08-29T16:03:46.042Z",
-            "createdAt": "2021-08-29T15:56:11.166Z",
-            "__v": 0
-          }
-        ],
-        "_id": "6127e2f1e8dd440171a31b18",
-        "name": "Чикибряк",
-        "group": "230781",
-        "leader": {
-          "role": 2,
-          "_id": "6127e241e8dd440171a31b0f",
-          "uid": 503012833,
-          "vkUser": "Антон Азаров",
-          "__v": 0,
-          "team": "6127e2f1e8dd440171a31b18",
-          "point": null
-        },
-        "color": "#828dab",
-        "institute": 2,
-        "__v": 0,
-        "startAt": "2021-08-28T12:31:30.377Z",
-        "finishAt": "2021-08-29T10:30:30.377Z"
-      })
+    const [selectedTeam, setSelectedTeam] = useState(null)
     const [selectedPoint, setSelectedPoint] = useState('')
     const [popout, setPopout] = useState(null)
     const [orgAvatars, setOrgAvatars] = useState([])
@@ -438,7 +373,7 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
                     {status[selectedUser?.role]}
                 </InfoRow>
                 </SimpleCell>
-                {selectedUser?.role < 3 && (<><Header mode="secondary">Команда</Header>
+                {selectedUser?.role < 3 && selectedUser?.team && (<><Header mode="secondary">Команда</Header>
                     <SimpleCell>
                         <InfoRow header="Название">
                             {selectedUser?.team.name}

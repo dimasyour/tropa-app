@@ -40,7 +40,7 @@ const App = () => {
 				setTheme(theme)
 			}
 		});
-		bridge.send("VKWebAppSetViewSettings", theme == "client_light" ? {"status_bar_style": 'light', "status_bar_color": "#191919"} : {"status_bar_style": 'dark', "status_bar_color": "#ffffff"} );
+		bridge.send("VKWebAppSetViewSettings", theme == "client_light" ? {"status_bar_style": 'light', "status_bar_color": "#191919"} : {"status_bar_style": 'dark', "status_bar_color": "#f0f0f0"} );
 	}, [theme])
 	useEffect(() => {
 		
@@ -130,7 +130,7 @@ const App = () => {
 								<Hello id="hello"/>
 							</View>
 							<View id="start" activePanel="start">
-								<Start id='start'/>
+								<Start id='start' theme={theme}/>
 							</View>
 							<View id="reg" activePanel="reg">
 								<RegTeam id='reg'/>

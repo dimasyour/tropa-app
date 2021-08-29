@@ -100,7 +100,7 @@ class MainStore{
     }
     
     updateTeammates = () => {
-        this.appUser.team ? 
+        this?.appUser?.team ? 
 		bridge.send("VKWebAppCallAPIMethod", {"method": "users.get", "params": {"user_ids": this.appUser.team.mates.map(mate => mate.uid).filter(mate => mate.uid != this.vk_u.id).join(','), "v":"5.131", "access_token": access_token, "fields": "photo_200"}}).then(data => {
             this.vk_mates = data.response
 		}) : []
@@ -183,7 +183,7 @@ const mainStore = new MainStore()
 
 autorun(() => {
     mainStore.updateTeammates()
-    if(mainStore.appUser.team.stage){
+    if(mainStore.appUser?.team.stage){
         mainStore.createConnection()
     }
 })

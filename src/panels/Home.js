@@ -367,45 +367,47 @@ const Home = inject('store')(observer(({ id, store }) => {
 			</Cell>
 		</Group>}
 
+			{store.appUser.team ? 
+			// С КОМАНДОЙ
+			<>
+			
+			{store.appUser.role < 3 && store.activeContest && store.activeContest?.institute != store.appUser.team?.institute && <Group header={<Header mode="secondary">Активная тропа</Header>}>
+				<RichCell
+				key={store.activeContest._id}
+				before={<div style={{display: 'flex', alignItems: 'center', marginRight: 10}}><Labirint/></div>}>
+					{store.activeContest.name}
+				</RichCell>
+			</Group>}
 
+			{store.appUser.team && store.appUser.team.startAt && store.appUser.role < 3 && store.appUser.team.status != 5 && store.appUser?.team.stage != 20 && <Group header={<Header mode="secondary">Текущее задание</Header>}>
 
-		{ store.appUser.team && !store.appUser?.team.startAt && store.appUser.role < 2 && <Group header={<Header mode="secondary">Ваша тропа</Header>}>
-			{store.teamContest && <RichCell
-			key={store.teamContest._id}
-			before={<div style={{display: 'flex', alignItems: 'center', marginRight: 10}}><Labirint/></div>}
-			caption={getDate(store.teamContest.date)}
-			after={store.appUser.team.stage == 0 ? store.teamContest.status ? store.appUser.role == 1 ? <Button mode="outline" onClick={setActiveModal.bind(this, 'rules')}>Начать забег</Button> : '' : timeFormat('dd дн. hh ч.',store.secToTeamContest) : '-'}>
-				{store.teamContest.name}
-			</RichCell>}
-		</Group>
-		}
-		{/* {store.appUser.team.start && store.appUser.team.currTask} */}
-		{store.appUser.role < 3 && store.activeContest && store.activeContest?.institute != store.appUser.team?.institute && <Group header={<Header mode="secondary">Активная тропа</Header>}>
-			<RichCell
-			key={store.activeContest._id}
-			before={<div style={{display: 'flex', alignItems: 'center', marginRight: 10}}><Labirint/></div>}>
-				{store.activeContest.name}
-			</RichCell>
-		</Group>
-		}
+				{<TaskCard isComplete={showComplete} isFailure={showFailure} title={!store.appUser.team.substage ? '???' : store.currentTask?.title} text={!store.appUser.team.substage ? store.currentTask?.text : store.currentTask?.text2}  fileID={!store.appUser.team.substage ? store.currentTask?.task.static : null} >
+					{!store.appUser.team.substage ? <Button before={<Icon24BrainOutline width={20} height={20}/>} mode="outline" onClick={setActiveModal.bind(this, 'check_ans')} stretched >Проверить ответ</Button> : <Button before={<Icon24ScanViewfinderOutline width={20} height={20}/>} mode="outline" onClick={readQR} stretched>Сканировать QR</Button>}
+				</TaskCard>}
+			</Group>}
 
+			{store.appUser.team.status == 5 &&  <Placeholder
+			icon={<Icon16ErrorCircleOutline width={70} height={70}/>}
+			>
+			Ваша команда дисквалифицирована
+			</Placeholder>}
 
+			{store.appUser.team && store.appUser?.team.stage == 20 && <div>
+			Вы на стадии финальной точки. Подойдите к организаторам
+			</div>}
 
-		{store.appUser.team.status == 5 &&  <Placeholder
-              icon={<Icon16ErrorCircleOutline width={70} height={70}/>}
-            >
-              Ваша команда дисквалифицирована
-            </Placeholder>}
-		{store.appUser.team && store.appUser.team.startAt && store.appUser.role < 3 && store.appUser.team.status != 5 && store.appUser?.team.stage != 20 && <Group header={<Header mode="secondary">Текущее задание</Header>}>
-
-			{<TaskCard isComplete={showComplete} isFailure={showFailure} title={!store.appUser.team.substage ? '???' : store.currentTask?.title} text={!store.appUser.team.substage ? store.currentTask?.text : store.currentTask?.text2}  fileID={!store.appUser.team.substage ? store.currentTask?.task.static : null} >
-				{!store.appUser.team.substage ? <Button before={<Icon24BrainOutline width={20} height={20}/>} mode="outline" onClick={setActiveModal.bind(this, 'check_ans')} stretched >Проверить ответ</Button> : <Button before={<Icon24ScanViewfinderOutline width={20} height={20}/>} mode="outline" onClick={readQR} stretched>Сканировать QR</Button>}
-			</TaskCard>}
-		</Group>}
-
-		{/* <Button mode="outline" onClick={setActiveModal.bind(this, 'way')}>Маршрут</Button> */}
-	
-		{store.appUser.role == 3 &&  <PullToRefresh onRefresh={onRefreshOrgTeam} isFetching={fetchngRefreshOrgTeam}>
+			</>
+			:
+			// БЕЗ КОМАНДЫ
+			<>
+			{store.appUser.role < 3 && store.activeContest && store.activeContest?.institute != store.appUser.team?.institute && <Group header={<Header mode="secondary">Активная тропа</Header>}>
+				<RichCell
+				key={store.activeContest._id}
+				before={<div style={{display: 'flex', alignItems: 'center', marginRight: 10}}><Labirint/></div>}>
+					{store.activeContest.name}
+				</RichCell>
+			</Group>}
+			{store.appUser.role == 3 &&  <PullToRefresh onRefresh={onRefreshOrgTeam} isFetching={fetchngRefreshOrgTeam}>
 				<Group header={<Header mode="secondary">Команды-участницы</Header>}>
 					<Cell disabled after={<Switch onClick={toggleShow}/>}>
 						Отображать оценки
@@ -425,10 +427,18 @@ const Home = inject('store')(observer(({ id, store }) => {
 			
 				</Group>
 			</PullToRefresh>
-		}
-		{store.appUser.team && store.appUser?.team.stage == 20 && <div>
-			Вы на стадии финальной точки. Подойдите к организаторам
-		</div>}
+			}
+			</>
+			}
+
+
+
+		
+
+		{/* <Button mode="outline" onClick={setActiveModal.bind(this, 'way')}>Маршрут</Button> */}
+	
+		
+		
 		
 		{/* <ReactPlayer url={"https://www.youtube.com/watch?v=AeDJ9WqpKh4"}/> */}
 		{store.homeSnackbar}
