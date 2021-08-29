@@ -1,9 +1,9 @@
 import React, { useState, useEffect, Fragment, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { inject, observer } from 'mobx-react'
-import { Panel, Avatar, Header, PanelHeader, Snackbar, ModalCard, Counter, FormItem, Div, Button, Cell, Switch, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, ViewWidth, RichCell, Caption, View, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, FormLayout, Radio, Input, Text } from '@vkontakte/vkui';
+import { Panel, Avatar, Header, PanelHeader, Snackbar, ModalCard, PullToRefresh, Counter, FormItem, Div, Placeholder, Button, Cell, Switch, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, ViewWidth, RichCell, Caption, View, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, FormLayout, Radio, Input, Text } from '@vkontakte/vkui';
 import { timeToDate, timeFormat, getDate, declOfNum } from '../utils/func';
-import { Icon28QrCodeOutline } from '@vkontakte/icons';
+import { Icon16ErrorCircleOutline } from '@vkontakte/icons';
 import { Icon16Done, Icon16ErrorCircle, Icon24Cancel, Icon24Done, Icon24BrainOutline, Icon24ScanViewfinderOutline, Icon28Flash, Icon16Chevron } from '@vkontakte/icons';
 import Status from './Status'
 
@@ -33,6 +33,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 	const [ rate, setRate ] = useState(0)
 	const [ showFailure, setShowFailure ] = useState(false)
 	const [ showComplete, setShowComplete ] = useState(false)
+	const [ fetchngRefreshOrgTeam, setFetchngRefreshOrgTeam ] = useState(false)
 
 	const idRateRef = useRef()
 	idRateRef.current = idRate
@@ -40,17 +41,27 @@ const Home = inject('store')(observer(({ id, store }) => {
 	const [ isShow, setIsShow ] = useState(false)
 	
 	useEffect(() => {
-		axios.get( serverURL + 'teams', { 
-			params: { type: 2 }
-		}).then(data => {
-			setTeams(data.data.teams)
-		})
+		if(store.appUser.role == 3){
+			axios.get( serverURL + 'teams', { 
+				params: { type: 2 }
+			}).then(data => {
+				setTeams(data.data.teams)
+			})
+		}
 	}, [])
 	useEffect(() => {
 	}, [store.teamContest])
 
 
-
+	const onRefreshOrgTeam = () => {
+		setFetchngRefreshOrgTeam(true)
+		axios.get( serverURL + 'teams', { 
+			params: { type: 2 }
+		}).then(data => {
+			setTeams(data.data.teams)
+			setFetchngRefreshOrgTeam(false)
+		})
+	}
 	const snackbarOk = text => {
 		setSnackbar(<Snackbar
 			onClose={() => setSnackbar(null)}
@@ -280,7 +291,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 						))}
             		</FormItem>
 					<FormItem top="Старый комментарий">
-						<Text>{idRateRef.current?.comment.length ? idRateRef.current.comment.pop() : 'отсутствует'}</Text>
+						<Text>{idRateRef.current?.comment.length ? idRateRef?.current?.comment[idRateRef?.current?.comment.length - 1] : 'отсутствует'}</Text>
             		</FormItem>
 					<FormItem top="Причина изменения">
 						<Input name="comment" onChange={onChangeComment}/>
@@ -380,8 +391,12 @@ const Home = inject('store')(observer(({ id, store }) => {
 
 
 
-
-		{store.appUser.team && store.appUser.team.startAt && store.appUser.role < 3 && store.appUser?.team.stage != 20 && <Group header={<Header mode="secondary">Текущее задание</Header>}>
+		{store.appUser.team.status == 5 &&  <Placeholder
+              icon={<Icon16ErrorCircleOutline width={70} height={70}/>}
+            >
+              Ваша команда дисквалифицирована
+            </Placeholder>}
+		{store.appUser.team && store.appUser.team.startAt && store.appUser.role < 3 && store.appUser.team.status != 5 && store.appUser?.team.stage != 20 && <Group header={<Header mode="secondary">Текущее задание</Header>}>
 
 			{<TaskCard isComplete={showComplete} isFailure={showFailure} title={!store.appUser.team.substage ? '???' : store.currentTask?.title} text={!store.appUser.team.substage ? store.currentTask?.text : store.currentTask?.text2}  fileID={!store.appUser.team.substage ? store.currentTask?.task.static : null} >
 				{!store.appUser.team.substage ? <Button before={<Icon24BrainOutline width={20} height={20}/>} mode="outline" onClick={setActiveModal.bind(this, 'check_ans')} stretched >Проверить ответ</Button> : <Button before={<Icon24ScanViewfinderOutline width={20} height={20}/>} mode="outline" onClick={readQR} stretched>Сканировать QR</Button>}
@@ -390,25 +405,26 @@ const Home = inject('store')(observer(({ id, store }) => {
 
 		{/* <Button mode="outline" onClick={setActiveModal.bind(this, 'way')}>Маршрут</Button> */}
 	
-		{store.appUser.role == 3 && 
-			<Group header={<Header mode="secondary">Команды-участницы</Header>}>
-				<Cell disabled after={<Switch onClick={toggleShow}/>}>
-          			Отображать оценки
-        		</Cell>
-			{
-			teams.map(team => {
-				const leftTeam = team.rates.filter(rate => rate.org == store.appUser._id)
-				return (<RichCell
-					onClick={team.stage >= store.appUser.point?.num ? leftTeam.length ? () => {setActiveModal('editRate'); setRateTeam(team); setIdRate(leftTeam[0])} : () => { setActiveModal('rateTeam1'); setRateTeam(team)}: null}
-					caption={`группа ${team.group}`}
-					before={<Avatar style={{background: team?.color}} />}
-					after={team.stage >= store.appUser.point?.num ? leftTeam.length ? <Counter mode={isShow ? 'prominent' : 'primary'}>{isShow ? leftTeam[0].rate  : '-' }</Counter> : <Icon16Chevron style={{color: '#4BB34B'}}/> : null}>
-					{team.name}
-				</RichCell>)
-				})
-			}
-		
-			</Group>
+		{store.appUser.role == 3 &&  <PullToRefresh onRefresh={onRefreshOrgTeam} isFetching={fetchngRefreshOrgTeam}>
+				<Group header={<Header mode="secondary">Команды-участницы</Header>}>
+					<Cell disabled after={<Switch onClick={toggleShow}/>}>
+						Отображать оценки
+					</Cell>
+				{
+				teams.map(team => {
+					const leftTeam = team.rates.filter(rate => rate.org == store.appUser._id)
+					return (<RichCell
+						onClick={team.stage >= store.appUser.point?.num ? leftTeam.length ? () => {setActiveModal('editRate'); setRateTeam(team); setIdRate(leftTeam[0])} : () => { setActiveModal('rateTeam1'); setRateTeam(team)}: null}
+						caption={`группа ${team.group}`}
+						before={<Avatar style={{background: team?.color}} />}
+						after={team.stage >= store.appUser.point?.num ? leftTeam.length ? <Counter mode={isShow ? 'prominent' : 'primary'}>{isShow ? leftTeam[0].rate  : '-' }</Counter> : <Icon16Chevron style={{color: '#4BB34B'}}/> : null}>
+						{team.name}
+					</RichCell>)
+					})
+				}
+			
+				</Group>
+			</PullToRefresh>
 		}
 		{store.appUser.team && store.appUser?.team.stage == 20 && <div>
 			Вы на стадии финальной точки. Подойдите к организаторам

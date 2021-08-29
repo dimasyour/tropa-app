@@ -3,6 +3,7 @@ import { Icon16Done, Icon16ErrorCircle} from '@vkontakte/icons'
 
 const timeToDate = (date, from = new Date()) => {
 	date = new Date(date)
+	from = new Date(from)
 	date.setHours(date.getHours() - 3)
 	const left = Math.floor(Math.abs(date - from) / 1000)
 	const d = Math.floor(left / 60 / 60 / 24)
@@ -33,21 +34,27 @@ const getDate = (date) => {
 	return `${d.getDate()} ${months[d.getMonth()]}, ${day[d.getDay()]}`
 }
 
-const snackbarOk = text => {
-	return (<Snackbar
-		onClose={() => setSnackbar(null)}
+const getTime = (time) => {
+	const d = new Date(time)
+	const months = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"]
+	return `${d.getDate()} ${months[d.getMonth()]} в ${d.getHours()}:${d.getMinutes()}`
+}
+
+const snackbarOk = (text, setter) => {
+	return setter(<Snackbar
+		onClose={() => setter(null)}
 		before={<Avatar size={24} style={{ background: 'var(--accent)' }}><Icon16Done fill="#fff" width={14} height={14} /></Avatar>}
 		>
 			{text}
 		</Snackbar>)
 }
-const snackbarErr = text => {
-	return (<Snackbar
-		onClose={() => setSnackbar(null)}
+const snackbarErr = (text, setter) => {
+	return setter(<Snackbar
+		onClose={() => setter(null)}
 		before={<Avatar size={24} style={{ background: 'var(--accent)' }}><Icon16ErrorCircle fill="#fff" width={14} height={14} /></Avatar>}
 	  >
 		 {text}
 	  </Snackbar>)
 }
 
-export { timeToDate, timeFormat, declOfNum, getDate, snackbarOk, snackbarErr }
+export { timeToDate, timeFormat, declOfNum, getDate, snackbarOk, snackbarErr, getTime, }

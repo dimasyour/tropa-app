@@ -24,6 +24,7 @@ class MainStore{
             socket: observable,
             socketStatus: observable,
             currentTask: observable,
+            cycle: observable,
 
             teamStatus: computed,
             userRole: computed,
@@ -54,6 +55,7 @@ class MainStore{
     contestList = []
     socketStatus = null
     currentTask = null
+    cycle = null
     
     
     socket = null
@@ -66,6 +68,7 @@ class MainStore{
             }
         });
         this.socket.on('connect', (data) => {
+            console.log('соединил')
               this.setSocketStatus(<Status mode='success'>На связи</Status>)
 		})
 
@@ -103,6 +106,11 @@ class MainStore{
 		}) : []
     }
 
+    getCycle = () => {
+        axios.get(serverURL + 'points').then(data => {
+            this.cycle = data.data.points
+        })
+    }
     setCurrentTask = task => this.currentTask = task
     setSocketStatus = status => this.socketStatus = status
     setAppUser = user => this.appUser = user
@@ -162,7 +170,9 @@ class MainStore{
             'отклонена',
             'отложена',
             'на рассмотрении',
-            'подтверждена'
+            'подтверждена',
+            '',
+            'дисквалифицированы'
         ]
         return status[this.appUser.team.status]
     }

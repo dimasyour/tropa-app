@@ -45,10 +45,10 @@ const TeamList = inject('store')(observer(({ id, store }) => {
                 newStatus: status
             }
         }).then(data => {
-            setSnackbar(snackbarOk(data.data.text))
+            snackbarOk(data.data.text, setSnackbar)
             setNeedUpdate(!needUpdate)
         }).catch(err => {
-            setSnackbar(snackbarErr(err.message))
+            snackbarErr(err.message, setSnackbar)
         })
     }
 	return (<Panel id={id}>
@@ -70,7 +70,7 @@ const TeamList = inject('store')(observer(({ id, store }) => {
                     after={team.mates.length + ' чел.'}
                     actions={
                     <React.Fragment>
-                        <Button onClick={updateStatus.bind(this, 3)}>Принять</Button>
+                        <Button onClick={updateStatus.bind(this, team._id, 3)}>Принять</Button>
                         {team.status == 2 && <Button onClick={updateStatus.bind(this, team._id, 1)} mode="secondary">Отложить</Button>}
                         {team.status > 0 && <Button onClick={updateStatus.bind(this, team._id, 0)} mode="destructive">Отклонить</Button>}
                     </React.Fragment>
