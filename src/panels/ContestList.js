@@ -1,14 +1,10 @@
-import React, {useEffect} from 'react';
-import PropTypes from 'prop-types';
+import React from 'react';
 import { inject, observer } from 'mobx-react'
 import { getDate } from '../utils/func'
 
 import Labirint from '../icons/Labirint'
 
-import { Panel, PanelHeader, RichCell, List, Avatar } from '@vkontakte/vkui';
-
-import logo from '../img/logo.jpg'
-
+import { Panel, PanelHeader, RichCell, List } from '@vkontakte/vkui';
 const ContestList = inject('store')(observer(({ id, store }) => {
 	
 	return (<Panel id={id}>

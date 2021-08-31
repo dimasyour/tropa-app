@@ -33,35 +33,27 @@ const Home = inject('store')(observer(({ id, store }) => {
 	const [ rate, setRate ] = useState(0)
 	const [ showFailure, setShowFailure ] = useState(false)
 	const [ showComplete, setShowComplete ] = useState(false)
-	const [ fetchngRefreshOrgTeam, setFetchngRefreshOrgTeam ] = useState(false)
+
 
 	const idRateRef = useRef()
 	idRateRef.current = idRate
 
 	const [ isShow, setIsShow ] = useState(false)
 	
-	useEffect(() => {
-		if(store.appUser.role == 3){
-			axios.get( serverURL + 'teams', { 
-				params: { type: 2 }
-			}).then(data => {
-				setTeams(data.data.teams)
-			})
-		}
-	}, [])
-	useEffect(() => {
-	}, [store.teamContest])
+	// useEffect(() => {
+	// 	if(store.appUser.role == 3){
+	// 		axios.get( serverURL + 'teams', { 
+	// 			params: { type: 2 }
+	// 		}).then(data => {
+	// 			setTeams(data.data.teams)
+	// 		})
+	// 	}
+	// }, [])
 
 
-	const onRefreshOrgTeam = () => {
-		setFetchngRefreshOrgTeam(true)
-		axios.get( serverURL + 'teams', { 
-			params: { type: 2 }
-		}).then(data => {
-			setTeams(data.data.teams)
-			setFetchngRefreshOrgTeam(false)
-		})
-	}
+	// const onRefreshOrgTeam = () => {
+	// 	store.socket.emit('org:refresh_team')
+	// }
 	const snackbarOk = text => {
 		setSnackbar(<Snackbar
 			onClose={() => setSnackbar(null)}
@@ -146,12 +138,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 	const onChangeAnswer = e => setAnswer(e.target.value)
 	const readyForStart = () => {
 		setActiveModal(null)
-		axios.get( serverURL + 'teams/start', {
-			params: {
-				teamId: store.appUser.team._id
-			}
-		}).then(data => snackbarOk(data.data.text))
-		.catch(err => snackbarErr(err.error_data.text))
+		store.socket.emit('team:ready_start', {teamId: store.appUser.team._id})
 	}
 	const checkAnswer = e => {
 		setActiveModal(null)
@@ -370,6 +357,26 @@ const Home = inject('store')(observer(({ id, store }) => {
 			{store.appUser.team ? 
 			// С КОМАНДОЙ
 			<>
+
+			{ store.appUser.team && !store.appUser?.team.startAt && store.appUser.role < 2 && <Group header={<Header mode="secondary">Ваша тропа</Header>}>
+						{store.teamContest && <RichCell
+						key={store.teamContest._id}
+						before={<div style={{display: 'flex', alignItems: 'center', marginRight: 10}}><Labirint/></div>}
+						caption={getDate(store.teamContest.date)}
+						after={store.appUser.team.stage == 0 ? store.teamContest.status ? store.appUser.role == 1 ? <Button mode="outline" onClick={setActiveModal.bind(this, 'rules')}>Начать забег</Button> : '' : timeFormat('dd дн. hh ч.',store.secToTeamContest) : '-'}>
+							{store.teamContest.name}
+						</RichCell>}
+					</Group>
+					}
+					{/* {store.appUser.team.start && store.appUser.team.currTask} */}
+					{store.appUser.role < 3 && store.activeContest && store.activeContest?.institute != store.appUser.team?.institute && <Group header={<Header mode="secondary">Активная тропа</Header>}>
+						<RichCell
+						key={store.activeContest._id}
+						before={<div style={{display: 'flex', alignItems: 'center', marginRight: 10}}><Labirint/></div>}>
+							{store.activeContest.name}
+						</RichCell>
+					</Group>
+					}
 			
 			{store.appUser.role < 3 && store.activeContest && store.activeContest?.institute != store.appUser.team?.institute && <Group header={<Header mode="secondary">Активная тропа</Header>}>
 				<RichCell
@@ -407,13 +414,18 @@ const Home = inject('store')(observer(({ id, store }) => {
 					{store.activeContest.name}
 				</RichCell>
 			</Group>}
-			{store.appUser.role == 3 &&  <PullToRefresh onRefresh={onRefreshOrgTeam} isFetching={fetchngRefreshOrgTeam}>
+			
+			</>
+			}
+
+
+			{store.appUser.role == 3 && 
 				<Group header={<Header mode="secondary">Команды-участницы</Header>}>
 					<Cell disabled after={<Switch onClick={toggleShow}/>}>
 						Отображать оценки
 					</Cell>
 				{
-				teams.map(team => {
+				store.orgTeams.map(team => {
 					const leftTeam = team.rates.filter(rate => rate.org == store.appUser._id)
 					return (<RichCell
 						onClick={team.stage >= store.appUser.point?.num ? leftTeam.length ? () => {setActiveModal('editRate'); setRateTeam(team); setIdRate(leftTeam[0])} : () => { setActiveModal('rateTeam1'); setRateTeam(team)}: null}
@@ -426,13 +438,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 				}
 			
 				</Group>
-			</PullToRefresh>
 			}
-			</>
-			}
-
-
-
 		
 
 		{/* <Button mode="outline" onClick={setActiveModal.bind(this, 'way')}>Маршрут</Button> */}

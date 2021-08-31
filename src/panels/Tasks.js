@@ -89,12 +89,12 @@ const Tasks = inject('store')(observer(({ id, store }) => {
 		  </ModalPageHeader>} >
 			<Group>
 				<FormLayout>
-					<Cell after={<Switch onChange={toggleActive} defaultChecked={status}/>}>Статус</Cell>
+					<Cell after={<Switch onChange={toggleActive} defaultChecked={status} disabled/>}>Статус</Cell>
 					<FormItem top="Название">
-						<Input value={title} name="title" onChange={onTitleUpdate}/>
+						<Input value={title} name="title" onChange={onTitleUpdate} disabled/>
 					</FormItem>
 					<FormItem top="Локация">
-						<Input value={location} name="location" onChange={onLocationUpdate}/>
+						<Input value={location} name="location" onChange={onLocationUpdate} disabled/>
 					</FormItem>
 					<FormItem top="Задание">
 						{activeModal.point?.task ? 
@@ -126,20 +126,18 @@ const Tasks = inject('store')(observer(({ id, store }) => {
 						>
 						</CustomSelect>}
 					</FormItem>
-					<FormItem>
+					{/* <FormItem>
 						<Button stretched size="l" onClick={updatePoint}>Обновить</Button>
-					</FormItem>
+					</FormItem> */}
 				</FormLayout>
 			</Group>
 		</ModalPage>
 	</ModalRoot>)
 	useEffect(() => {
-		store.togglePopout()
 		axios(serverURL + 'points').then(res => {
 			setPoints(res.data.points)
 		}).then(() => {
 			axios.get(serverURL + 'tasks').then(res => {
-				store.togglePopout()
 				setTasks(res.data.tasks)
 			})
 		})

@@ -25,6 +25,7 @@ class MainStore{
             socketStatus: observable,
             currentTask: observable,
             cycle: observable,
+            orgTeams: observable,
 
             teamStatus: computed,
             userRole: computed,
@@ -34,6 +35,7 @@ class MainStore{
             hashNextPoint: computed,
 
             setAppUser: action,
+            setOrgTeams: action,
             setStatusApp: action,
             goPage: action,
             getAppUser: action,
@@ -56,6 +58,7 @@ class MainStore{
     socketStatus = null
     currentTask = null
     cycle = null
+    orgTeams = []
     
     
     socket = null
@@ -64,7 +67,8 @@ class MainStore{
             reconnectionDelayMax: 10000,
             query: {
                 "team": this.appUser.team._id, 
-                "point": this.appUser.team.stage
+                "point": this.appUser.team.stage, 
+                "role": this.appUser.role
             }
         });
         this.socket.on('connect', (data) => {
@@ -86,7 +90,11 @@ class MainStore{
                 this.socket.connect()
             }, 3000)
 		})
-        this.socket.on('update_team', data => {
+        this.socket.on('org:update_team', (data) => {
+            console.log('disabled')
+            this.setOrgTeams(data.teams)
+		})
+        this.socket.on('team:update_team', data => {
             this.getAppUser()
         })
         this.socket.on('connect_error', () => {
@@ -115,6 +123,7 @@ class MainStore{
     setSocketStatus = status => this.socketStatus = status
     setAppUser = user => this.appUser = user
     setStatusApp = value => this.statusApp = value
+    setOrgTeams = teams => this.orgTeams = teams
     goPage = page => {
         this.activePage = page
         window.history.pushState({panel: page}, `${page}`)
@@ -148,8 +157,13 @@ class MainStore{
     }
     get teamContest(){
         const user = this.appUser
-        return user.team ? this.contestList.filter(contest => contest.institute == user.team.institute).pop() 
-        : { e: 'empty'}
+        if(user.team){
+            let a = this.contestList.filter(contest => contest.institute.includes(user.team.institute)).pop() 
+            a.instStr = a.institute.join().replace(',','')
+            return a
+        } else {
+            return { e: 'empty'}
+        }
     }
     get secToTeamContest(){
         return this.teamContest?.date ? timeToDate(this.teamContest.date) : null
@@ -159,7 +173,7 @@ class MainStore{
             `${this.store?.vk_u.sex == 1 ? 'участница' : 'участник'} команды "${this.appUser.team?.name}"`,
             `капитан команды "${this.appUser.team?.name}"`,
             'наблюдатель',
-            `организатор точки "${this.appUser.point?.title}"`,
+            this.appUser.point?.title ? `организатор точки "${this.appUser.point?.title}"` : 'организатор, точка не назначена',
             'модератор',
             'администратор'
         ]
@@ -183,7 +197,7 @@ const mainStore = new MainStore()
 
 autorun(() => {
     mainStore.updateTeammates()
-    if(mainStore.appUser?.team.stage){
+    if((mainStore.activeContest?.institute.includes(mainStore.appUser.team.institute) || mainStore.appUser.role > 2) && !mainStore.socket){
         mainStore.createConnection()
     }
 })

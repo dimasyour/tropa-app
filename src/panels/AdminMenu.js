@@ -2,7 +2,7 @@ import React, { useEffect, useState, Fragment } from 'react';
 import { inject, observer } from 'mobx-react'
 import { Panel, PanelHeader, Group, Header, SimpleCell, CellButton, ModalRoot, ModalPage, Input, List, Alert, FormLayout, FormItem, View, ModalPageHeader, PanelHeaderButton, usePlatform, ANDROID, VKCOM, IOS, Cell, Avatar, Gradient, Title, InfoRow, RichCell, SelectMimicry, Radio, FormLayoutGroup, Separator, Footer } from '@vkontakte/vkui';
 import { Icon16StarCircle, Icon28AddOutline, Icon28DeleteOutline   } from '@vkontakte/icons';
-import { Icon28ChevronDownOutline, Icon24Cancel, Icon24Done, Icon24UserAdded, Icon28User, Icon28Search } from '@vkontakte/icons';
+import { Icon28ChevronDownOutline, Icon24Cancel, Icon24Done, Icon24UserAdded, Icon28User, Icon28Search, Icon20CheckCircleFillGreen, Icon20CancelCircleFillRed } from '@vkontakte/icons';
 import { Snackbar } from '@vkontakte/vkui'
 import { Icon16Done, Icon16ErrorCircle} from '@vkontakte/icons'
 import { Icon24BrowserBack } from '@vkontakte/icons';
@@ -10,7 +10,7 @@ import axios from 'axios';
 import useInput from './hooks/useInput';
 import { serverURL, access_token } from '../config';
 import bridge from '@vkontakte/vk-bridge'
-import { getTime, timeToDate, timeFormat, declOfNum } from '../utils/func';
+import { getTime, timeToDate, timeFormat, declOfNum, getDate } from '../utils/func';
 const AdminMenu = inject('store')(observer(({ id, store }) => {
     const platform = usePlatform('')
     const [searchInput, setSearchInput] = useState('')
@@ -34,6 +34,58 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
             setSearchInput('')
         }
     },[activeModal])
+
+    const setOrgAlert = () => {
+        setPopout(<Alert
+            actions={[{
+                title: 'Отмена',
+                autoclose: true,
+                mode: 'cancel'
+              }, {
+                title: 'ДА',
+                autoclose: true,
+                mode: 'destructive',
+                action: () => updateOrgStatus(3),
+              }]}
+              actionsLayout="horizontal"
+              onClose={setPopout.bind(this, null)}
+              header="Назначение организатором"
+              text={`${selectedUser.vkUser} будет назачен организатором, уверены?`}
+        />)
+        
+    }
+
+    const alertActivateContest = (current) => {
+        const activateContest = () => {
+            axios.get(serverURL + 'contest/update', { params: { 
+                id: current._id,
+                status: +!current.status,
+            }}).then(d => {
+                setActiveModal(null)
+                setSnackbar(snackbarOk(d.data.text))
+                store.getContestList()
+            }).catch(e => {
+                setActiveModal(null)
+                setSnackbar(snackbarErr('Что-то пошло не так'))
+            })
+        }
+        setPopout(<Alert
+            actions={[{
+                title: 'Отмена',
+                autoclose: true,
+                mode: 'cancel'
+              }, {
+                title: current.status ? 'Завершить' : 'Начать',
+                autoclose: true,
+                mode: 'destructive',
+                action: () => activateContest(),
+              }]}
+              actionsLayout="horizontal"
+              onClose={setPopout.bind(this, null)}
+              header="Статус забега"
+              text={`Статус ${current.name} будет изменён на "${current.status ? 'завершён' : 'проходит'}"`}
+        />)
+    }
 
     const teamPoints = selectedTeam?.rates.reduce((acc, rate) => acc + rate.rate, 0) ?? 0
 
@@ -73,12 +125,42 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
     }
 
 
+    const alertAllowTeam = () => {
+        const allow = () => {
+            axios.get(serverURL + 'teams/update', { params:{
+                type: 'allow',
+                teamId: selectedTeam?._id
+            }}).then(d => {
+                setSnackbar(snackbarOk(d.data.text))
+                setActiveModal(null)
+            }).catch(e => {
+                setSnackbar(snackbarErr('Что-то пошло не так'))
+                setActiveModal(null)
+            })
+        }
+        setPopout(<Alert
+            actions={[{
+                title: 'Отмена',
+                autoclose: true,
+                mode: 'cancel'
+              }, {
+                title: 'Выдать разрешение',
+                autoclose: true,
+                mode: 'destructive',
+                action: () => allow(),
+              }]}
+              actionsLayout="horizontal"
+              onClose={setPopout.bind(this, null)}
+              header="Разрешение на старт"
+              text={`Вы уверены, что хотите выдать разрешение команде ${selectedTeam?.name}?`}
+        />)
+    }
     const demoteAllOrgs = () => {
         const demote = () => {
             axios.get(serverURL + 'users/demoteAll').then(d => {
                 setSnackbar(snackbarOk(d.data.text))
             }).catch(e => {
-                setSnackbar(snackbarErr(e.response_data.text))
+                setSnackbar(snackbarErr('Что-то пошло не так'))
             })
         }
         setPopout(<Alert
@@ -248,6 +330,37 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
     ]
     const institute = ['', 'ИВТС', 'ИПМКН', 'ИГДИС', 'ИЕН', 'ИПФКСиТ', 'ПТИ', 'ИПУ', 'ИГСН', 'МИ']
 	const modals = (<ModalRoot activeModal={activeModal}>
+        <ModalPage id="contests"
+        onClose={() => setActiveModal(null)}
+        settlingHeight={100}
+        header={<ModalPageHeader
+        
+			left={(
+				<Fragment>
+				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}><Icon24Cancel /></PanelHeaderButton>}
+				</Fragment>
+			  )}
+			  right={ searchInput.length > 2 && (
+				<Fragment>
+				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={findUser}><Icon24Done /></PanelHeaderButton>}
+				  {platform === IOS && <PanelHeaderButton onClick={findUser}>Готово</PanelHeaderButton>}
+				</Fragment>
+			  )}
+		  >
+			Забеги
+		  </ModalPageHeader>} >
+           <FormLayoutGroup>
+               {store.contestList.map(contest => (
+                   <RichCell
+                   onClick={alertActivateContest.bind(this, contest)}
+                   key={contest._id}
+                   text={contest.institute}
+                   caption={getDate(contest.date)}
+                   after={contest.status ? <Icon20CheckCircleFillGreen/> : <Icon20CancelCircleFillRed/>}
+                   >{contest.name}</RichCell>
+               ))}
+           </FormLayoutGroup>
+        </ModalPage>
         <ModalPage id="searchUser"
         onClose={() => setActiveModal(null)}
         header={<ModalPageHeader
@@ -396,7 +509,7 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
                         <SelectMimicry onClick={setActiveModal.bind(this, 'selectPoint')} onChange={onChangePoint} placeholder={selectedUser?.point?.title ?? "Выберите точку"}/>
                     </FormItem>
                 </FormLayout>}
-                {selectedUser?.role != 3 && <CellButton onClick={updateOrgStatus.bind(this, 3)}>Назначить организатором</CellButton>}
+                {selectedUser?.role != 3 && <CellButton onClick={setOrgAlert}>Назначить организатором</CellButton>}
                 {selectedUser?.role == 3 && <CellButton mode="danger" onClick={updateOrgStatus.bind(this, 2)}>Разжаловать организатора</CellButton>}
             </Group>
         </ModalPage>
@@ -479,11 +592,11 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
             </Group>
             {!selectedTeam?.startAt && <Group>
                 <CellButton>Изменить статус заявки команды</CellButton>
-                {!selectedTeam?.allow && <CellButton>Команда готова начать</CellButton>}
+                {!selectedTeam?.allow && <CellButton onClick={alertAllowTeam}>Команда готова начать</CellButton>}
             </Group>}
             
             <Group>
-                {selectedTeam?.rates.length && <CellButton onClick={handleOpenRate}>Посмотреть оценки команды</CellButton>}
+                {selectedTeam?.rates.length ? <CellButton onClick={handleOpenRate}>Посмотреть оценки команды</CellButton> : null}
                 {selectedTeam?.stage != 20 && <CellButton>Завершить забег для команды</CellButton>}
                 {selectedTeam?.status != 5 && <CellButton mode="danger" onClick={disqTeam.bind(this, selectedTeam?._id)}>Дисквалифицировать</CellButton>}
                 {selectedTeam?.status == 5 && <CellButton mode="danger" onClick={rehabilTeam.bind(this, selectedTeam?._id)}>Реабилитировать</CellButton>}
@@ -551,6 +664,7 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
                     Админка
                 </PanelHeader>
                 <Group header={<Header mode="secondary">Тропа</Header>}>
+                    <SimpleCell expandable  before={<Icon16StarCircle size={28}/>} onClick={setActiveModal.bind(this, 'contests')}>Забеги</SimpleCell>
                     <SimpleCell expandable  before={<Icon16StarCircle size={28}/>} onClick={store.goPage.bind(this, 'tasks')}>Задания-точки</SimpleCell>
                 </Group>
                 <Group header={<Header mode="secondary">Команды</Header>}>

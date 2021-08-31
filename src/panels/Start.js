@@ -9,10 +9,6 @@ import Logo from '../icons/Logo'
 import { Panel, Text, Separator, Div, Button, Title, PanelHeader } from '@vkontakte/vkui';
 
 const Start = inject('store')(observer(({ id, store, theme }) => {
-	useEffect(() =>{
-		bridge.send("VKWebAppSetViewSettings", {"status_bar_style": "light", "action_bar_color": "#4BB34B"});
-		return () => bridge.send("VKWebAppSetViewSettings",  theme == "client_light" ? {"status_bar_style": 'light', "status_bar_color": "#191919"} : {"status_bar_style": 'dark', "status_bar_color": "#f0f0f0"} );
-	}, [])
 	return (<Panel id={id}>
 		{/* <PanelHeader separator={false} style={{color: 'white'}}>Тропа первака 2021 </PanelHeader> */}
 		<Div style={{display: 'flex', flexDirection: 'column', height: '100%', padding: 0}}>

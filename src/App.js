@@ -28,7 +28,7 @@ import TeamList from './panels/TeamList';
 import './custom.css'
 
 const App = () => {
-	const [theme, setTheme] = useState('client_light')
+	const [theme, setTheme] = useState('bright_light')
 
   	const onStoryChange = (e) => store.goPage(e.currentTarget.dataset.story);
 	  
@@ -36,12 +36,16 @@ const App = () => {
 	useEffect(() => {
 		bridge.subscribe(({ detail: { type, data }}) => {
 			if (type === 'VKWebAppUpdateConfig') {
-				const theme = data.scheme ? data.scheme : 'client_light';
+				const theme = data.scheme ? data.scheme : 'bright_light';
 				setTheme(theme)
 			}
 		});
-		bridge.send("VKWebAppSetViewSettings", theme == "client_light" ? {"status_bar_style": 'light', "status_bar_color": "#191919"} : {"status_bar_style": 'dark', "status_bar_color": "#f0f0f0"} );
-	}, [theme])
+		if(store.activePage == 'start'){
+			bridge.send("VKWebAppSetViewSettings", {"status_bar_style": "light", "action_bar_color": "#4BB34B"});
+		} else {
+			bridge.send("VKWebAppSetViewSettings", theme == "bright_light" ? {"status_bar_style": 'dark', "action_bar_color": "#ffffff"} : {"status_bar_style": 'light', "action_bar_color": "#191919"} );
+		}
+	}, [theme, store.activePage])
 	useEffect(() => {
 		
 		async function fetchData() {
