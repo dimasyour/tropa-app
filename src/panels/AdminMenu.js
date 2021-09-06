@@ -1,7 +1,7 @@
 import React, { useEffect, useState, Fragment } from 'react';
 import { inject, observer } from 'mobx-react'
 import { Panel, PanelHeader, Group, Header, SimpleCell, CellButton, ModalRoot, ModalPage, Input, List, Alert, FormLayout, FormItem, View, ModalPageHeader, PanelHeaderButton, usePlatform, ANDROID, VKCOM, IOS, Cell, Avatar, Gradient, Title, InfoRow, RichCell, SelectMimicry, Radio, FormLayoutGroup, Separator, Footer } from '@vkontakte/vkui';
-import { Icon16StarCircle, Icon28AddOutline, Icon28DeleteOutline   } from '@vkontakte/icons';
+import { Icon16StarCircle, Icon24ScanViewfinderOutline } from '@vkontakte/icons';
 import { Icon28ChevronDownOutline, Icon24Cancel, Icon24Done, Icon24UserAdded, Icon28User, Icon28Search, Icon20CheckCircleFillGreen, Icon20CancelCircleFillRed } from '@vkontakte/icons';
 import { Snackbar } from '@vkontakte/vkui'
 import { Icon16Done, Icon16ErrorCircle} from '@vkontakte/icons'
@@ -11,6 +11,7 @@ import useInput from './hooks/useInput';
 import { serverURL, access_token } from '../config';
 import bridge from '@vkontakte/vk-bridge'
 import { getTime, timeToDate, timeFormat, declOfNum, getDate } from '../utils/func';
+
 const AdminMenu = inject('store')(observer(({ id, store }) => {
     const platform = usePlatform('')
     const [searchInput, setSearchInput] = useState('')
@@ -35,6 +36,29 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
         }
     },[activeModal])
 
+    const readQR = () => {
+		bridge.send("VKWebAppOpenCodeReader").then(res => {
+			const { code_data } = res
+            const [ action, team ] = code_data.split('|')
+            if(action == 'start'){
+                store.socket.emit('team:ready_start', {teamId: team})
+                setSnackbar(snackbarOk('Команда теперь может начать забег. Проверь это на их экране'))
+            } else if(action == 'finish'){
+                store.socket.emit('team:finish_team', {teamId: team})
+                setSnackbar(snackbarOk('Забег команды завершён. Проверь это на их экране'))
+            } else {
+                setSnackbar(snackbarErr('QR не подходит'))
+            }
+		}).catch(err => {
+			if(err.error_type == "client_error"){
+				setSnackbar(snackbarErr(err.error_data.error_reason))
+			} else {
+                setSnackbar(snackbarErr(err.message))
+            }
+		})
+	}
+
+    
     const setOrgAlert = () => {
         setPopout(<Alert
             actions={[{
@@ -51,6 +75,26 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
               onClose={setPopout.bind(this, null)}
               header="Назначение организатором"
               text={`${selectedUser.vkUser} будет назачен организатором, уверены?`}
+        />)
+        
+    }
+
+    const setModerAlert = () => {
+        setPopout(<Alert
+            actions={[{
+                title: 'Отмена',
+                autoclose: true,
+                mode: 'cancel'
+              }, {
+                title: 'ДА',
+                autoclose: true,
+                mode: 'destructive',
+                action: () => updateModerStatus(4),
+              }]}
+              actionsLayout="horizontal"
+              onClose={setPopout.bind(this, null)}
+              header="Назначение организатором"
+              text={`${selectedUser.vkUser} будет назачен модератором, уверены?`}
         />)
         
     }
@@ -180,6 +224,31 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
               text="Вы уверены, что хотите разжаловать всех организаторов?"
         />)
     }
+    const demoteAllModers = () => {
+        const demote = () => {
+            axios.get(serverURL + 'users/demoteModersAll').then(d => {
+                setSnackbar(snackbarOk(d.data.text))
+            }).catch(e => {
+                setSnackbar(snackbarErr('Что-то пошло не так'))
+            })
+        }
+        setPopout(<Alert
+            actions={[{
+                title: 'Отмена',
+                autoclose: true,
+                mode: 'cancel'
+              }, {
+                title: 'Разжаловать',
+                autoclose: true,
+                mode: 'destructive',
+                action: () => demote(),
+              }]}
+              actionsLayout="horizontal"
+              onClose={setPopout.bind(this, null)}
+              header="Глобальное понижение"
+              text="Вы уверены, что хотите разжаловать всех модераторов?"
+        />)
+    }
     const disqTeam = (team) => {
         const disq = () => {
             axios.get(serverURL + 'teams/update', {
@@ -290,6 +359,19 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
         axios.get( serverURL + 'users/update', { params: {
             userId: selectedUser?._id,
             type: 'org',
+            role: status
+        }}).then(d => {
+            setActiveModal(null)
+            setSnackbar(snackbarOk(d.data.text))
+        }).catch(e => {
+            setActiveModal(null)
+            setSnackbar(snackbarErr(e.error_response.text))
+        })
+    }
+    const updateModerStatus = (status) => {
+        axios.get( serverURL + 'users/update', { params: {
+            userId: selectedUser?._id,
+            type: 'moder',
             role: status
         }}).then(d => {
             setActiveModal(null)
@@ -511,6 +593,8 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
                 </FormLayout>}
                 {selectedUser?.role != 3 && <CellButton onClick={setOrgAlert}>Назначить организатором</CellButton>}
                 {selectedUser?.role == 3 && <CellButton mode="danger" onClick={updateOrgStatus.bind(this, 2)}>Разжаловать организатора</CellButton>}
+                {selectedUser?.role < 3 && <CellButton onClick={setModerAlert}>Назначить модератором</CellButton>}
+                {selectedUser?.role == 4 && <CellButton onClick={updateOrgStatus.bind(this, 2)}>Разжаловать модератором</CellButton>}
             </Group>
         </ModalPage>
         <ModalPage id="searchTeam_detailed"
@@ -561,13 +645,6 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
                     {selectedTeam?.mates.map(user => (<Cell  before={<Avatar size={44} src={user.photo}/>} description={user.uid == selectedTeam?.leader.uid && 'Капитан'} key={user.uid}>{user.vkUser}</Cell>))}
                 </List>
                 <Header mode="secondary">Забег</Header>
-                    {!selectedTeam?.startAt && 
-                        <SimpleCell multiline>
-                            <InfoRow header="Разрешение на старт">
-                                {selectedTeam?.allow ? 'есть' : 'отсутствует'}
-                            </InfoRow>
-                        </SimpleCell>
-                    }
                     {selectedTeam?.startAt && !selectedTeam?.finishAt && (
                         <>
                             <SimpleCell multiline>
@@ -590,16 +667,11 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
 
                     
             </Group>
-            {!selectedTeam?.startAt && <Group>
-                <CellButton>Изменить статус заявки команды</CellButton>
-                {!selectedTeam?.allow && <CellButton onClick={alertAllowTeam}>Команда готова начать</CellButton>}
-            </Group>}
             
             <Group>
                 {selectedTeam?.rates.length ? <CellButton onClick={handleOpenRate}>Посмотреть оценки команды</CellButton> : null}
-                {selectedTeam?.stage != 20 && <CellButton>Завершить забег для команды</CellButton>}
-                {selectedTeam?.status != 5 && <CellButton mode="danger" onClick={disqTeam.bind(this, selectedTeam?._id)}>Дисквалифицировать</CellButton>}
-                {selectedTeam?.status == 5 && <CellButton mode="danger" onClick={rehabilTeam.bind(this, selectedTeam?._id)}>Реабилитировать</CellButton>}
+                {selectedTeam?.status != 5 && store.appUser.role == 5 && <CellButton mode="danger" onClick={disqTeam.bind(this, selectedTeam?._id)}>Дисквалифицировать</CellButton>}
+                {selectedTeam?.status == 5 &&  store.appUser.role == 5 && <CellButton mode="danger" onClick={rehabilTeam.bind(this, selectedTeam?._id)}>Реабилитировать</CellButton>}
             </Group>
         </ModalPage>
         <ModalPage id="selectPoint"
@@ -664,19 +736,25 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
                     Админка
                 </PanelHeader>
                 <Group header={<Header mode="secondary">Тропа</Header>}>
-                    <SimpleCell expandable  before={<Icon16StarCircle size={28}/>} onClick={setActiveModal.bind(this, 'contests')}>Забеги</SimpleCell>
-                    <SimpleCell expandable  before={<Icon16StarCircle size={28}/>} onClick={store.goPage.bind(this, 'tasks')}>Задания-точки</SimpleCell>
+                    { store.appUser.role == 5 && <SimpleCell expandable  before={<Icon16StarCircle size={28}/>} onClick={setActiveModal.bind(this, 'contests')}>Забеги</SimpleCell>}
+                    <SimpleCell expandable  before={<Icon16StarCircle size={28}/>} onClick={store.goPage.bind(this, 'tasks')}>Цикл</SimpleCell>
+                    {store.activeContest && <SimpleCell expandable before={<Icon24ScanViewfinderOutline size={28}/>} onClick={readQR}>Запустить/остановить команду</SimpleCell>}
                 </Group>
                 <Group header={<Header mode="secondary">Команды</Header>}>
-                    <SimpleCell expandable  before={<Icon24UserAdded size={28}/>} onClick={store.goPage.bind(this, 'teamList')}>Одобрение заявок</SimpleCell>
+                    {store.appUser.role == 5 && <SimpleCell expandable  before={<Icon24UserAdded size={28}/>} onClick={store.goPage.bind(this, 'teamList')}>Одобрение заявок</SimpleCell>}
                     <SimpleCell expandable  before={<Icon28Search size={28}/>} onClick={setActiveModal.bind(this, 'searchTeam')}>Информация о команде</SimpleCell>
                 </Group>
                 <Group header={<Header mode="secondary">Пользователи</Header>}>
                     <SimpleCell expandable  before={<Icon28User size={28}/>} onClick={setActiveModal.bind(this, 'searchUser')}>Информация о пользователе</SimpleCell>
                 </Group>
-                <Group header={<Header mode="secondary">Организаторы</Header>}>
-                    <CellButton before={<Icon28ChevronDownOutline size={28} />} mode="danger" onClick={demoteAllOrgs}>Разжаловать всех организаторов</CellButton>
-                </Group>
+                {store.appUser.role == 5 && <>
+                    <Group header={<Header mode="secondary">Организаторы</Header>}>
+                        <CellButton before={<Icon28ChevronDownOutline size={28} />} mode="danger" onClick={demoteAllOrgs}>Разжаловать всех организаторов</CellButton>
+                    </Group>
+                    <Group header={<Header mode="secondary">Модераторы</Header>}>
+                        <CellButton before={<Icon28ChevronDownOutline size={28} />} mode="danger" onClick={demoteAllModers}>Разжаловать всех модераторов</CellButton>
+                    </Group>
+                </>}
                 {snackbar}
             </Panel>
         </View>

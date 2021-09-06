@@ -91,7 +91,6 @@ class MainStore{
             }, 3000)
 		})
         this.socket.on('org:update_team', (data) => {
-            console.log('disabled')
             this.setOrgTeams(data.teams)
 		})
         this.socket.on('team:update_team', data => {
@@ -157,9 +156,9 @@ class MainStore{
     }
     get teamContest(){
         const user = this.appUser
-        if(user.team){
+        if(user.team && this.contestList){
             let a = this.contestList.filter(contest => contest.institute.includes(user.team.institute)).pop() 
-            a.instStr = a.institute.join().replace(',','')
+            // a.instStr = a.institute.join().replace(',','')
             return a
         } else {
             return { e: 'empty'}
@@ -197,7 +196,7 @@ const mainStore = new MainStore()
 
 autorun(() => {
     mainStore.updateTeammates()
-    if((mainStore.activeContest?.institute.includes(mainStore.appUser.team.institute) || mainStore.appUser.role > 2) && !mainStore.socket){
+    if(((mainStore.appUser.team.stage != 21 && mainStore.activeContest?.institute.includes(mainStore.appUser.team.institute)) || mainStore.appUser.role > 2) && !mainStore.socket){
         mainStore.createConnection()
     }
 })

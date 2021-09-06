@@ -5,6 +5,7 @@ const timeToDate = (date, from = new Date()) => {
 	date = new Date(date)
 	from = new Date(from)
 	date.setHours(date.getHours() - 3)
+	from.setHours(from.getHours() - 3)
 	const left = Math.floor(Math.abs(date - from) / 1000)
 	const d = Math.floor(left / 60 / 60 / 24)
 	const h = Math.floor(left / 60 / 60)

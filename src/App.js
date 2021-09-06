@@ -38,6 +38,8 @@ const App = () => {
 			if (type === 'VKWebAppUpdateConfig') {
 				const theme = data.scheme ? data.scheme : 'bright_light';
 				setTheme(theme)
+			} else if( type == 'VKWebAppViewHide'){
+				console.log('hide')
 			}
 		});
 		if(store.activePage == 'start'){

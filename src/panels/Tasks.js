@@ -1,14 +1,10 @@
-import React, {useEffect, useState, useLayoutEffect } from 'react';
-import PropTypes from 'prop-types';
+import React, {useEffect, useState, useLayoutEffect, useMemo } from 'react';
 import { inject, observer } from 'mobx-react'
 import axios from 'axios';
 
-import { Panel, PanelHeader, PanelHeaderClose, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, ViewWidth, RichCell, View, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, FormLayout, FormItem, CustomSelect, Input, Cell, Button, Switch, Snackbar, Avatar } from '@vkontakte/vkui';
+import { Panel, PanelHeader, PanelHeaderClose, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, ViewWidth, RichCell, View, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, Header, SimpleCell, Cell, Avatar, InfoRow } from '@vkontakte/vkui';
 import { Icon28ChevronBack, Icon24Back, Icon24Dismiss } from '@vkontakte/icons'
-import { Icon20CheckCircleFillGreen } from '@vkontakte/icons';
-import { Icon20CancelCircleFillRed } from '@vkontakte/icons';
 import { serverURL } from '../config';
-import { Icon16Done, Icon16ErrorCircle } from '@vkontakte/icons';
 
 const Tasks = inject('store')(observer(({ id, store }) => {
 	const osName = usePlatform()
@@ -20,65 +16,27 @@ const Tasks = inject('store')(observer(({ id, store }) => {
 	const [snackbar, setSnackbar] = useState(null)
 	const pointsRef = React.useRef()
 
+	const getTeamsOnPoint = (num) => {
+		return store.orgTeams.filter(team => team.stage >= num).sort((a, b) => a.stage - b.stage)
+	}
 
 	pointsRef.current = points
 	useEffect(() => {
-		if(activeModal.point){
-			setTitle(activeModal.point.title)
-			setLocation(activeModal.point.location)
-			setTask(activeModal.point.task)
-			setNext(activeModal.point.next)
-			setStatus(activeModal.point.active)
-		}
+		
 	}, [activeModal])
 
 	useLayoutEffect(() => {
 
 	}, [tasks])
 
-	const [status, setStatus] = useState(false)
-	const [title, setTitle] = useState('')
-	const [location, setLocation] = useState('')
-	const [task, setTask] = useState('')
-	const [next, setNext] = useState('')
 	
-	const onTitleUpdate = (e) =>{
-		setTitle(e.target.value)
-	}
-	const onLocationUpdate = (e) => setLocation(e.target.value)
-	const onChangeTask = (e) => setTask(e.target.value)
-	const onChangeNext = (e) => setNext(e.target.value)
-	const toggleActive = (e) => setStatus(!status)
-	const updatePoint = () => {
-		axios.get( serverURL + 'points/update', {
-			params: {
-				title, active: status, location, task, next,
-				id: activeModal.point._id
-			}
-		}).then(data => {
-			setActiveModal({modal: null, point: null })
-			setPoints(data.data.points)
-			setSnackbar(<Snackbar
-				onClose={() => setSnackbar(null)}
-				before={<Avatar size={24} style={{ background: 'var(--accent)' }}><Icon16Done fill="#fff" width={14} height={14} /></Avatar>}
-				>
-					Точка успешно обновлена
-				</Snackbar>)
-		})
-		.catch(err => {
-			setActiveModal({modal: null, point: null })
-			setSnackbar(<Snackbar
-				onClose={() => setSnackbar(null)}
-				before={<Avatar size={24} style={{ background: 'var(--accent)' }}><Icon16ErrorCircle fill="#fff" width={14} height={14} /></Avatar>}
-			  >
-				 {err.response?.data.text}
-			  </Snackbar>)
-		})
-	}
+
+	
+	
 
 	const modal = (<ModalRoot activeModal={activeModal.modal}>
 		<ModalPage
-		id="edit_point"
+		id="point_info"
 		settlingHeight={100}
 		onClose={setActiveModal.bind(this, {modal: null, point: null})}
 		header={<ModalPageHeader
@@ -88,48 +46,32 @@ const Tasks = inject('store')(observer(({ id, store }) => {
 			{activeModal.point ? activeModal.point.title : null}
 		  </ModalPageHeader>} >
 			<Group>
-				<FormLayout>
-					<Cell after={<Switch onChange={toggleActive} defaultChecked={status} disabled/>}>Статус</Cell>
-					<FormItem top="Название">
-						<Input value={title} name="title" onChange={onTitleUpdate} disabled/>
-					</FormItem>
-					<FormItem top="Локация">
-						<Input value={location} name="location" onChange={onLocationUpdate} disabled/>
-					</FormItem>
-					<FormItem top="Задание">
-						{activeModal.point?.task ? 
-						
-						<Input value={activeModal.point.task.title} disabled/>
-						:
-						
-						<CustomSelect 
-							placeholder="Введи название задания"
-							onChange={onChangeTask}
-							filterFn={(value, option) => option.label.toLowerCase().includes(value.toLowerCase()) || option.description.toLowerCase().includes(value.toLowerCase())}
-							options={tasks?.map(item => { return {label: item.title, value: item._id }})}
+				<SimpleCell>
+					<InfoRow header="Название">
+						{activeModal.point?.title}
+					</InfoRow>
+				</SimpleCell>
+				<SimpleCell>
+					<InfoRow header="Локация">
+						{activeModal.point?.location}
+					</InfoRow>
+				</SimpleCell>
+				<SimpleCell>
+					<InfoRow header="Задание">
+						{activeModal.point?.task.title}
+					</InfoRow>
+				</SimpleCell>
+				{store.activeContest && <>
+				<Header mode="secondary">Команды на точке</Header>
+					{getTeamsOnPoint(activeModal.point?.num).map(team => (
+						<Cell
+						before={<Avatar style={{background: team.color}}/>}
+						after={team.stage == activeModal.point?.num ? team.substage ? 'на точке' : 'ищет точку' : null}
 						>
-
-						</CustomSelect> }
-					</FormItem>
-					<FormItem top="Следующая точка">
-						{activeModal.point?.next ? 
-						
-						<Input value={activeModal.point.next.title} disabled/>
-						
-						: 
-						
-						<CustomSelect 
-							placeholder="Введи название точки"
-							onChange={onChangeNext}
-							filterFn={(value, option) => option.label.toLowerCase().includes(value.toLowerCase()) || option.description.toLowerCase().includes(value.toLowerCase())}
-							options={points?.filter(item => !item.next).map(item => { return { label: item.title, value: item._id}})}
-						>
-						</CustomSelect>}
-					</FormItem>
-					{/* <FormItem>
-						<Button stretched size="l" onClick={updatePoint}>Обновить</Button>
-					</FormItem> */}
-				</FormLayout>
+							{team.name}
+						</Cell>
+					))}
+				</>}
 			</Group>
 		</ModalPage>
 	</ModalRoot>)
@@ -151,15 +93,14 @@ const Tasks = inject('store')(observer(({ id, store }) => {
 			<PanelHeader left={<PanelHeaderButton onClick={() => window.history.back()}>
 				{osName === IOS ? <Icon28ChevronBack/> : <Icon24Back/>}
 			</PanelHeaderButton>}> 
-				Задания-точки
+				Цикл
 			</PanelHeader>
 			{points.error && <div>Возникла следующая ошибка: {points.err}</div>}
 			{!pointsRef.current.error && pointsRef.current.map(point => (<RichCell
 			key={point.num}
 			text={point.task?.title ?? 'задание не указано'}
 			caption={point.location}
-			onClick={setActiveModal.bind(this, {modal: 'edit_point', point})}
-			after={point.active ? <Icon20CheckCircleFillGreen/> : <Icon20CancelCircleFillRed/>}>
+			onClick={setActiveModal.bind(this, {modal: 'point_info', point})}>
 				{point.title}
 			</RichCell>))}
 		</Panel>

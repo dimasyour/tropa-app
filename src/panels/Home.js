@@ -1,11 +1,13 @@
 import React, { useState, useEffect, Fragment, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { inject, observer } from 'mobx-react'
-import { Panel, Avatar, Header, PanelHeader, Snackbar, ModalCard, PullToRefresh, Counter, FormItem, Div, Placeholder, Button, Cell, Switch, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, ViewWidth, RichCell, Caption, View, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, FormLayout, Radio, Input, Text } from '@vkontakte/vkui';
+import { Panel, Avatar, Header, PanelHeader, Tabs, TabsItem, Snackbar, ModalCard, Counter, FormItem, Div, Placeholder, Button, Cell, Switch, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, ViewWidth, RichCell, Caption, Link, View, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, FormLayout, Radio, Input, Text } from '@vkontakte/vkui';
 import { timeToDate, timeFormat, getDate, declOfNum } from '../utils/func';
 import { Icon16ErrorCircleOutline } from '@vkontakte/icons';
-import { Icon16Done, Icon16ErrorCircle, Icon24Cancel, Icon24Done, Icon24BrainOutline, Icon24ScanViewfinderOutline, Icon28Flash, Icon16Chevron } from '@vkontakte/icons';
+import { Icon16Done, Icon16ErrorCircle, Icon24Cancel, Icon24Done, Icon24BrainOutline, Icon24ScanViewfinderOutline, Icon28Flash, Icon16Chevron, Icon28Notifications, Icon28RefreshOutline, Icon16ErrorCircleFill } from '@vkontakte/icons';
+import { Icon12OnlineVkmobile } from '@vkontakte/icons';
 import Status from './Status'
+import Logo from '../icons/Logo'
 
 import { serverURL } from '../config'
 import Way from './Way';
@@ -33,27 +35,47 @@ const Home = inject('store')(observer(({ id, store }) => {
 	const [ rate, setRate ] = useState(0)
 	const [ showFailure, setShowFailure ] = useState(false)
 	const [ showComplete, setShowComplete ] = useState(false)
+	const [ selectedTab, setSelectedTab ] = useState('rules')
+	const [ moders, setModers ] = useState([])
 
 
 	const idRateRef = useRef()
 	idRateRef.current = idRate
 
 	const [ isShow, setIsShow ] = useState(false)
-	
-	// useEffect(() => {
-	// 	if(store.appUser.role == 3){
-	// 		axios.get( serverURL + 'teams', { 
-	// 			params: { type: 2 }
-	// 		}).then(data => {
-	// 			setTeams(data.data.teams)
-	// 		})
-	// 	}
-	// }, [])
 
+	useEffect(() => {
+		const startParams = new URLSearchParams(window.location.search)
+		const allowed = startParams.get("vk_are_notifications_enabled")
+		if(allowed == 0){
+			setActiveModal('req_notify')
+		}
+	}, [])
 
-	// const onRefreshOrgTeam = () => {
-	// 	store.socket.emit('org:refresh_team')
-	// }
+	const requestNotify = () => {
+		bridge.send("VKWebAppAllowNotifications").catch(err => {
+			if(err.error_data.error_code == 4){
+				console.log('deny')
+			}
+		});
+	}
+	if(store.socket){
+		store.socket.on('team:started', () => {
+			setActiveModal(null)
+		})
+		store.socket.on('team:finished', () => {
+			console.log('finished')
+			setActiveModal(null)
+		})
+		store.socket.on('org:get_moders', (data) => {
+			// console.log('moders', data)
+			// setModers(data.moders)
+		})
+	}
+	const onAhtung = () => {
+		setActiveModal('red_alert'); 
+		store.socket.emit('org:get_moders')
+	}
 	const snackbarOk = text => {
 		setSnackbar(<Snackbar
 			onClose={() => setSnackbar(null)}
@@ -135,6 +157,9 @@ const Home = inject('store')(observer(({ id, store }) => {
 	const onChangeComment = e => {
 		setComment(e.target.value)
 	}
+	const sendNotify = () => {
+
+	}
 	const onChangeAnswer = e => setAnswer(e.target.value)
 	const readyForStart = () => {
 		setActiveModal(null)
@@ -152,10 +177,6 @@ const Home = inject('store')(observer(({ id, store }) => {
 			} else {
 				snackbarErr('Подумайте ещё')
 			}
-			// setTimeout(() => {
-			// 	setShowComplete(false)
-			// 	setShowFailure(false)
-			// }, 5000)
 		})
 		setAnswer('')
 	}
@@ -175,6 +196,39 @@ const Home = inject('store')(observer(({ id, store }) => {
         >
 
         </ModalCard>
+		<ModalCard 
+			id="req_notify"
+			onClose={() => this.setActiveModal(null)}
+			header="Ахтунг-уведомления"
+			subheader="Тебя назначили модератором, а значит на тебя надеятся! Включи пожалуйста уведомления приложения, чтобы организаторы могли уведомить тебя о проблеме на точке"
+			icon={<Icon28Notifications key="icon" />}
+			actions={
+				<Button size="l" mode="primary" onClick={() => { setActiveModal(null); requestNotify()}}>
+				  Согласен
+				</Button>
+			  }
+		>
+			</ModalCard>
+			<ModalCard 
+			id="red_alert"
+			onClose={() => this.setActiveModal(null)}
+			header="Ахтунг-уведомление"
+			subheader="Ты уверен, что тебе нужна помощь свободных организаторов?"
+			icon={<Icon28Notifications key="icon" />}
+			actions={
+				<>
+					<Button size="l" mode="primary" onClick={() => { setActiveModal(null); sendNotify()}}>
+					ДА
+					</Button>
+					<Button size="l" mode="outline" onClick={() => { setActiveModal(null);}}>
+					Обойдусь
+					</Button>
+			  	</>
+			  }
+		>
+
+		</ModalCard>
+		
 		<ModalPage
 		id="rules"
 		settlingHeight={100}
@@ -188,17 +242,52 @@ const Home = inject('store')(observer(({ id, store }) => {
 		  >
 			Напутствие
 		  </ModalPageHeader>} >
-			<FormItem>
-				Правила забега
-			</FormItem>
-			<FormItem>
-				{store.appUser.team.allow ? 
-				<Button stretched  onClick={readyForStart} mode="primary">Готовы начать</Button> 
-				: <>
-				 <Caption level="2" weight="semibold" caps style={{ marginBottom: 16 }}>Подойдите к организаторам</Caption>
-				 <Button stretched mode="primary" disabled>Готовы начать</Button> 
-				</> }
-			</FormItem>
+		  	<Tabs>
+					<TabsItem 
+					selected={selectedTab == 'rules'}
+					onClick={setSelectedTab.bind(this, 'rules')}
+					>Правила</TabsItem>
+					<TabsItem
+					selected={selectedTab == 'start'}
+					onClick={setSelectedTab.bind(this, 'start')}
+					>Старт</TabsItem>
+				</Tabs>
+				{selectedTab == 'rules' && <FormItem>
+					Правила забега
+				</FormItem> }
+				{selectedTab == 'start' && <FormItem>
+				
+				 {store.appUser.role == 1 ? <>
+					<Caption level="2" weight="semibold" caps style={{ marginBottom: 16, marginLeft: 16 }}>Для начала забега вам необходимо получить разрешение организатора. Покажите ему этот код</Caption>
+					<Div style={{background: "white", padding: '10px', width: 'fit-content', margin: '0 auto', borderRadius: "6px", textAlign: 'center'}}>
+						<QRCode value={'start|'+store.appUser.team._id} />		
+					</Div>
+
+				 </> :  <Caption level="2" weight="semibold" caps style={{ marginBottom: 16 }}>У капитана вашей команды есть инструкция</Caption>}
+			</FormItem>}
+			
+		</ModalPage>
+		<ModalPage
+		id="finish"
+		settlingHeight={100}
+		onClose={setActiveModal.bind(this, null)}
+		header={<ModalPageHeader
+			left={(
+				<Fragment>
+				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}><Icon24Cancel /></PanelHeaderButton>}
+				</Fragment>
+			  )}
+		  >
+			Финиш
+		  </ModalPageHeader>} >
+		  {store.appUser.role == 1 ? <>
+					<Caption level="2" weight="semibold" caps style={{ marginBottom: 16, marginLeft: 16 }}>Покажите организатору этот код на финише</Caption>
+					<Div style={{background: "white", padding: '10px', width: 'fit-content', margin: '0 auto', borderRadius: "6px", textAlign: 'center'}}>
+						<QRCode value={'finish|'+store.appUser.team._id} />		
+					</Div>
+
+				 </> :  <Caption level="2" weight="semibold" caps style={{ marginBottom: 16 }}>У капитана вашей команды есть инструкция</Caption>}
+			
 		</ModalPage>
 		<ModalPage
 		id="rateTeam1"
@@ -335,17 +424,19 @@ const Home = inject('store')(observer(({ id, store }) => {
 				</FormItem>
 			</FormLayout>
 		</ModalPage>
+		
 	</ModalRoot>) : null
 	return (
 
 		<View id="home" activePanel="home" modal={modalRoot}>
 								<Panel id={id}>
 		<PanelHeader >Тропа первака 2021  </PanelHeader>
-
+	
 
 
 		{store.vk_u &&
 		<Group>
+
 			<Cell
 				before={store.vk_u.photo_200 ? <Avatar src={store.vk_u.photo_200}/> : null}
 				description={store.userRole}
@@ -386,7 +477,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 				</RichCell>
 			</Group>}
 
-			{store.appUser.team && store.appUser.team.startAt && store.appUser.role < 3 && store.appUser.team.status != 5 && store.appUser?.team.stage != 20 && <Group header={<Header mode="secondary">Текущее задание</Header>}>
+			{store.appUser.team && store.appUser.team.startAt && store.appUser.role < 3 && store.appUser.team.status != 5 && store.appUser?.team.stage != 20 && store.appUser?.team.stage != 21 && <Group header={<Header mode="secondary">Текущее задание</Header>}>
 
 				{<TaskCard isComplete={showComplete} isFailure={showFailure} title={!store.appUser.team.substage ? '???' : store.currentTask?.title} text={!store.appUser.team.substage ? store.currentTask?.text : store.currentTask?.text2}  fileID={!store.appUser.team.substage ? store.currentTask?.task.static : null} >
 					{!store.appUser.team.substage ? <Button before={<Icon24BrainOutline width={20} height={20}/>} mode="outline" onClick={setActiveModal.bind(this, 'check_ans')} stretched >Проверить ответ</Button> : <Button before={<Icon24ScanViewfinderOutline width={20} height={20}/>} mode="outline" onClick={readQR} stretched>Сканировать QR</Button>}
@@ -400,7 +491,19 @@ const Home = inject('store')(observer(({ id, store }) => {
 			</Placeholder>}
 
 			{store.appUser.team && store.appUser?.team.stage == 20 && <div>
-			Вы на стадии финальной точки. Подойдите к организаторам
+			<TaskCard title="Завершение забега" text="Вы большие молодцы. Вам остался один шаг до финиша">
+				<Button mode="outline" before={<Icon12OnlineVkmobile/>} onClick={setActiveModal.bind(this, 'finish')} stretched>Задание</Button>
+			</TaskCard>
+			</div>}
+
+			{store.appUser.team && store.appUser?.team.stage == 21 && <div>
+				<Logo/>
+				<div>
+					Ваш забег завершён! Спасибо за участие! Ожидайте подведения итогов
+				</div>
+				<div>
+					Ваше время: {timeFormat('hh ч. mm мин. ss с.', timeToDate(store.appUser.team?.finishAt, store.appUser.team?.startAt))}
+				</div>
 			</div>}
 
 			</>
@@ -420,7 +523,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 
 
 			{store.appUser.role == 3 && 
-				<Group header={<Header mode="secondary">Команды-участницы</Header>}>
+				<Group header={<Header mode="secondary" aside={<><Link style={{marginRight: 24}} onClick={onAhtung}><Icon16ErrorCircleFill width={16} height={16}/></Link><Link onClick={() => {store.socket.emit('org:refresh_team');snackbarOk('Данные обновлены');}}><Icon28RefreshOutline width={20} height={20}/></Link></>}>Команды-участницы</Header>}>
 					<Cell disabled after={<Switch onClick={toggleShow}/>}>
 						Отображать оценки
 					</Cell>
@@ -428,10 +531,10 @@ const Home = inject('store')(observer(({ id, store }) => {
 				store.orgTeams.map(team => {
 					const leftTeam = team.rates.filter(rate => rate.org == store.appUser._id)
 					return (<RichCell
-						onClick={team.stage >= store.appUser.point?.num ? leftTeam.length ? () => {setActiveModal('editRate'); setRateTeam(team); setIdRate(leftTeam[0])} : () => { setActiveModal('rateTeam1'); setRateTeam(team)}: null}
+						onClick={team.stage >= store.appUser.point?.num && team.substage ? leftTeam.length ? () => {setActiveModal('editRate'); setRateTeam(team); setIdRate(leftTeam[0])} : () => { setActiveModal('rateTeam1'); setRateTeam(team)}: null}
 						caption={`группа ${team.group}`}
 						before={<Avatar style={{background: team?.color}} />}
-						after={team.stage >= store.appUser.point?.num ? leftTeam.length ? <Counter mode={isShow ? 'prominent' : 'primary'}>{isShow ? leftTeam[0].rate  : '-' }</Counter> : <Icon16Chevron style={{color: '#4BB34B'}}/> : null}>
+						after={team.stage >= store.appUser.point?.num ? leftTeam.length ? <Counter mode={isShow ? 'prominent' : 'primary'}>{isShow ? leftTeam[0].rate  : '-' }</Counter> : team.substage ? <Icon16Chevron style={{color: '#4BB34B'}}/> : 'ищет вас' : null}>
 						{team.name}
 					</RichCell>)
 					})
