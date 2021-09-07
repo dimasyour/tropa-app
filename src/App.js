@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import bridge from '@vkontakte/vk-bridge';
-import { View, AdaptivityProvider, withAdaptivity, AppRoot, ConfigProvider, Epic, Tabbar, TabbarItem } from '@vkontakte/vkui';
+import { View, AdaptivityProvider, withAdaptivity, AppRoot, ConfigProvider, Epic, Tabbar, TabbarItem, withPlatform } from '@vkontakte/vkui';
 import '@vkontakte/vkui/dist/vkui.css';
-import { io } from 'socket.io-client'
 import { observer, Provider } from 'mobx-react'
-import { Icon24Home,
+import { 
 	Icon28Users3Outline,
 	Icon28CalendarOutline,
 	Icon28UserCircleOutline } from '@vkontakte/icons'
@@ -27,7 +26,7 @@ import TeamList from './panels/TeamList';
 
 import './custom.css'
 
-const App = () => {
+const App = ({ platform }) => {
 	const [theme, setTheme] = useState('bright_light')
 
   	const onStoryChange = (e) => store.goPage(e.currentTarget.dataset.story);
@@ -96,7 +95,7 @@ const App = () => {
 		}
 	}, [])
 	return (
-		<ConfigProvider scheme={theme}>
+		<ConfigProvider scheme={theme} platform={platform}>
 			<AdaptivityProvider>
 				<AppRoot mode="full">
 					<Provider store={store}>
@@ -165,4 +164,4 @@ const App = () => {
 	);
 }
 
-export default withAdaptivity(observer(App), {viewWidth: true});;
+export default withPlatform(withAdaptivity(observer(App), {viewWidth: true}));;

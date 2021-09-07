@@ -196,9 +196,6 @@ const MyTeam = inject('store')(observer(({ id, store }) => {
                         {store.appUser.team.mates.length < 12 && store.activeContest?.institute != store.appUser.team.institute && store.appUser.role == 1 && <CellButton onClick={selectFriends} before={<Avatar shadow={false} size={44}><Icon28AddOutline /></Avatar>}>Добавить участников</CellButton>}
                     </List>
             </Group>
-            <Group>
-                <CellButton onClick={sendHi} before={<Icon20Hand/>}>Обнять команду</CellButton>
-            </Group>
             {snackbar}
         </Panel>
     </View>

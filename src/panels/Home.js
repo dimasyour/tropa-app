@@ -1,15 +1,12 @@
 import React, { useState, useEffect, Fragment, useRef } from 'react';
-import PropTypes from 'prop-types';
 import { inject, observer } from 'mobx-react'
 import { Panel, Avatar, Header, PanelHeader, Tabs, TabsItem, Snackbar, ModalCard, Counter, FormItem, Div, Placeholder, Button, Cell, Switch, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, ViewWidth, RichCell, Caption, Link, View, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, FormLayout, Radio, Input, Text } from '@vkontakte/vkui';
 import { timeToDate, timeFormat, getDate, declOfNum } from '../utils/func';
 import { Icon16ErrorCircleOutline } from '@vkontakte/icons';
 import { Icon16Done, Icon16ErrorCircle, Icon24Cancel, Icon24Done, Icon24BrainOutline, Icon24ScanViewfinderOutline, Icon28Flash, Icon16Chevron, Icon28Notifications, Icon28RefreshOutline, Icon16ErrorCircleFill } from '@vkontakte/icons';
 import { Icon12OnlineVkmobile } from '@vkontakte/icons';
-import Status from './Status'
 import Logo from '../icons/Logo'
 
-import { serverURL } from '../config'
 import Way from './Way';
 import Labirint from '../icons/Labirint'
 import TaskCard from './components/TaskCard'
@@ -38,11 +35,13 @@ const Home = inject('store')(observer(({ id, store }) => {
 	const [ selectedTab, setSelectedTab ] = useState('rules')
 	const [ moders, setModers ] = useState([])
 
-
+	const sortedByPoint = [ ...store.orgTeams ].sort((a,b) => b.stage - a.stage)
 	const idRateRef = useRef()
 	idRateRef.current = idRate
 
 	const [ isShow, setIsShow ] = useState(false)
+
+	const institute = ['', 'ИВТС', 'ИПМКН', 'ИГДИС', 'ИЕН', 'ИПФКСиТ', 'ПТИ', 'ИПУ', 'ИГСН', 'МИ']
 
 	useEffect(() => {
 		const startParams = new URLSearchParams(window.location.search)
@@ -117,42 +116,24 @@ const Home = inject('store')(observer(({ id, store }) => {
 		})
 	}
 	const sendRate = () => {
-		axios.get( serverURL + 'rate/new', {
-			params: {
-				team: rateTeam._id,
-				point: store.appUser.point.title, 
-				comment: comment,
-				rate: rate,
-				org: store.appUser._id
-			}
-		}).then(data => {
-			setActiveModal(null)
-			snackbarOk(data.data.text)
-			
-		}).catch(err => {
-			setActiveModal(null)
-			snackbarErr(err.error_data.error_reason)
+		setActiveModal(null)
+		store.socket.emit('org:new_rate', {
+			team: rateTeam._id,
+			point: store.appUser.point.title, 
+			comment: comment,
+			rate: rate,
+			org: store.appUser._id
 		})
+		setSnackbar(snackbarOk('Оценка выставлена'))
 	}
 	const editRate = () => {
-		axios.get(serverURL + 'rate/edit', {
-			params: { 
-				rate: rate,
-				comment: comment,
-				id: idRateRef.current._id,
-			}
-		}).then(data => {
-			setActiveModal(null)
-			snackbarOk('Оценка успешно изменена')
-		}).catch(err => {
-			setActiveModal(null)
-			snackbarErr(err.error_data.error_reason)
+		setActiveModal(null)
+		store.socket.emit('org:edit_rate', { 
+			rate: rate,
+			comment: comment,
+			id: idRateRef.current._id,
 		})
-		axios.get( serverURL + 'teams', { 
-			params: { type: 2 }
-		}).then(data => {
-			setTeams(data.data.teams)
-		})
+		snackbarOk('Оценка успешно изменена')
 	}
 	const onChangeComment = e => {
 		setComment(e.target.value)
@@ -454,7 +435,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 						key={store.teamContest._id}
 						before={<div style={{display: 'flex', alignItems: 'center', marginRight: 10}}><Labirint/></div>}
 						caption={getDate(store.teamContest.date)}
-						after={store.appUser.team.stage == 0 ? store.teamContest.status ? store.appUser.role == 1 ? <Button mode="outline" onClick={setActiveModal.bind(this, 'rules')}>Начать забег</Button> : '' : timeFormat('dd дн. hh ч.',store.secToTeamContest) : '-'}>
+						after={store.appUser.team.stage == 0 ? store.teamContest.status ? store.appUser.role == 1 ? store.appUser.status == 3 ? <Button mode="outline" onClick={setActiveModal.bind(this, 'rules')}>Начать забег</Button> : '' : '' : timeFormat('dd дн. hh ч.',store.secToTeamContest) : '-'}>
 							{store.teamContest.name}
 						</RichCell>}
 					</Group>
@@ -520,6 +501,20 @@ const Home = inject('store')(observer(({ id, store }) => {
 			
 			</>
 			}
+			{store.appUser.role > 3 && store.activeContest && <Group header={<Header mode="secondary" aside={<Link onClick={() => {store.socket.emit('org:refresh_team');snackbarOk('Данные обновлены');}}><Icon28RefreshOutline width={20} height={20}/></Link>}>Положение команд</Header>}>
+				{ 
+				sortedByPoint.map(team => {
+					const rate = team.rates.reduce((acc, rate) => acc + rate.rate, 0)
+					return (<RichCell
+				key={team._id}
+				before={<Avatar style={{ background: team.color}}/>}
+				text={team.stage ? `Точка ${team.stage+1}` : 'не стартовали'}
+				after={rate + ' ' + declOfNum(rate , ['балл', 'балла', 'баллов'])}
+				caption={team.substage ? 'на точке' : 'решают загадку'}>
+					{team.name}
+				</RichCell>)})
+				}
+			</Group> }
 
 
 			{store.appUser.role == 3 && 
@@ -530,11 +525,12 @@ const Home = inject('store')(observer(({ id, store }) => {
 				{
 				store.orgTeams.map(team => {
 					const leftTeam = team.rates.filter(rate => rate.org == store.appUser._id)
+					let index = (store.appUser.point?.num - 1) * 2
 					return (<RichCell
 						onClick={team.stage >= store.appUser.point?.num && team.substage ? leftTeam.length ? () => {setActiveModal('editRate'); setRateTeam(team); setIdRate(leftTeam[0])} : () => { setActiveModal('rateTeam1'); setRateTeam(team)}: null}
-						caption={`группа ${team.group}`}
+						caption={`${institute[team.institute]}, гр.${team.group} ${team.timings[index] ? `, на задании точки с ${new Date(team.timings[index]).getHours()}:${new Date(team.timings[index]).getMinutes()}` : ''}`}
 						before={<Avatar style={{background: team?.color}} />}
-						after={team.stage >= store.appUser.point?.num ? leftTeam.length ? <Counter mode={isShow ? 'prominent' : 'primary'}>{isShow ? leftTeam[0].rate  : '-' }</Counter> : team.substage ? <Icon16Chevron style={{color: '#4BB34B'}}/> : 'ищет вас' : null}>
+						after={team.stage >= store.appUser.point?.num ? leftTeam.length ? <Counter mode={isShow ? 'prominent' : 'primary'}>{isShow ? leftTeam[0].rate  : '-' }</Counter> : team.substage ? <><Icon16Chevron style={{color: '#4BB34B'}}/></> : 'решают загадку' : null}>
 						{team.name}
 					</RichCell>)
 					})
