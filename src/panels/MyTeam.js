@@ -11,6 +11,7 @@ import bridge from '@vkontakte/vk-bridge';
 
 import { View, Panel, CellButton, Header, Group, Cell, Text, Avatar, List, RichCell, Alert, HorizontalCell, HorizontalScroll, PanelHeader, FormLayout, FormItem, Input, Button, Snackbar } from '@vkontakte/vkui';
 import Status from './Status';
+import TeamAvatar from './components/TeamAvatar';
 
 const MyTeam = inject('store')(observer(({ id, store }) => {
     const [newName, setNewName] = useState(store.appUser.team.name)
@@ -18,6 +19,7 @@ const MyTeam = inject('store')(observer(({ id, store }) => {
     const [snackbar, setSnackbar] = useState(null)
 
     const closePopout = () => setPopout(null)
+
 
     const selectFriends = () => {
         bridge.send("VKWebAppGetFriends", { multi: true }).then(data => {
@@ -148,7 +150,7 @@ const MyTeam = inject('store')(observer(({ id, store }) => {
             </PanelHeader>
             <Group>
                 <RichCell
-                before={<Avatar size={48} style={{background: store.appUser.team.color}} />}
+                before={<TeamAvatar team={store.appUser.team}/>}
                 caption={`Заявка ${store.teamStatus}`}
             >
                 
@@ -166,11 +168,6 @@ const MyTeam = inject('store')(observer(({ id, store }) => {
                     </div>
                 </HorizontalScroll>
             </Group>
-            {store.socket ? <Group>
-                <Cell after={store.socketStatus}>
-                    Статус сервера
-                </Cell>
-            </Group> : null}
             
             {store.activeContest?.institute != store.appUser.team.institute && store.appUser.role == 1 &&  store.appUser.team.status < 2 && <Group header={<Header mode="secondary">Основная информация</Header>}>
                 <FormLayout>

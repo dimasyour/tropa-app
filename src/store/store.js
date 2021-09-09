@@ -55,7 +55,7 @@ class MainStore{
     appUser = null
     vk_mates = []
     contestList = []
-    socketStatus = null
+    socketStatus = <Status mode='default'>Откл.</Status>
     currentTask = null
     cycle = null
     orgTeams = []

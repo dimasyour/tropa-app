@@ -6,6 +6,7 @@ import { Panel, PanelHeader, PanelHeaderClose, Group, PanelHeaderButton, usePlat
 import { Icon28ChevronBack, Icon24Back, Icon24Dismiss } from '@vkontakte/icons'
 import { serverURL } from '../config';
 import { timeFormat, timeToDate } from '../utils/func'
+import TeamAvatar from './components/TeamAvatar';
 
 const Tasks = inject('store')(observer(({ id, store }) => {
 	const osName = usePlatform()
@@ -67,7 +68,7 @@ const Tasks = inject('store')(observer(({ id, store }) => {
 					{getTeamsOnPoint(activeModal.point?.num).map(team => {
 						let index = (activeModal.point?.num - 1) * 2
 						return (<Cell
-						before={<Avatar style={{background: team.color}}/>}
+						before={<TeamAvatar team={team}/>}
 						after={team.stage != activeModal.point?.num ? timeFormat('mm:ss' , timeToDate(new Date(team.timings[index]), new Date(team.timings[index+1]))) :  team.timings[index] ? `на точке с ${new Date(team.timings[index]).getHours()}:${new Date(team.timings[index]).getMinutes()}` : 'решают загадку'}
 						>
 							{team.name}

@@ -3,10 +3,9 @@ import { inject, observer } from 'mobx-react'
 import { Panel, Avatar, Header, PanelHeader, Tabs, TabsItem, Snackbar, ModalCard, Counter, FormItem, Div, Placeholder, Button, Cell, Switch, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, ViewWidth, RichCell, Caption, Link, View, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, FormLayout, Radio, Input, Text } from '@vkontakte/vkui';
 import { timeToDate, timeFormat, getDate, declOfNum } from '../utils/func';
 import { Icon16ErrorCircleOutline } from '@vkontakte/icons';
-import { Icon16Done, Icon16ErrorCircle, Icon24Cancel, Icon24Done, Icon24BrainOutline, Icon24ScanViewfinderOutline, Icon28Flash, Icon16Chevron, Icon28Notifications, Icon28RefreshOutline, Icon16ErrorCircleFill } from '@vkontakte/icons';
+import { Icon16Done, Icon16ErrorCircle,Icon20InfoCircleOutline, Icon24Cancel, Icon24Done,Icon20FireCircleFillRed, Icon24BrainOutline, Icon24ScanViewfinderOutline, Icon28Flash, Icon16Chevron, Icon28Notifications, Icon28RefreshOutline, } from '@vkontakte/icons';
 import { Icon12OnlineVkmobile } from '@vkontakte/icons';
 import Logo from '../icons/Logo'
-
 import Way from './Way';
 import Labirint from '../icons/Labirint'
 import TaskCard from './components/TaskCard'
@@ -15,6 +14,8 @@ import QRCode from 'react-qr-code'
 import bridge from '@vkontakte/vk-bridge'
 import axios from 'axios';
 import ReactPlayer from 'react-player';
+import TeamAvatar from './components/TeamAvatar';
+import { service_key } from '../config';
 
 const Home = inject('store')(observer(({ id, store }) => {
 	const platform = usePlatform()
@@ -22,7 +23,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 	const isMobile = viewWidth <= ViewWidth.MOBILE;
 	const [ activeModal, setActiveModal ] = useState(null)
 	const [ snackbar, setSnackbar ] = useState(null)
-	const [ teams, setTeams ] = useState([])
+	const [ activeTabPoint, setActiveTabPoint ] = useState('history')
 
 	const [ rateTeam, setRateTeam ] = useState(null)
 
@@ -33,7 +34,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 	const [ showFailure, setShowFailure ] = useState(false)
 	const [ showComplete, setShowComplete ] = useState(false)
 	const [ selectedTab, setSelectedTab ] = useState('rules')
-	const [ moders, setModers ] = useState([])
+	const [ moders, setModers ] = useState([503012833])
 
 	const sortedByPoint = [ ...store.orgTeams ].sort((a,b) => b.stage - a.stage)
 	const idRateRef = useRef()
@@ -139,7 +140,10 @@ const Home = inject('store')(observer(({ id, store }) => {
 		setComment(e.target.value)
 	}
 	const sendNotify = () => {
-
+		const message = `${store.vk_u.first_name} ${store.vk_u.last_name} сообщает, что на точке ${store.appUser.point.title.toUpperCase()} происходит кошмар!`
+		bridge.send("VKWebAppCallAPIMethod", {"method": "notifications.sendMessage", "params": {"user_ids": moders.join(','), "v":"5.131", "random_id": new Date().getTime() , "access_token": service_key, "message": message}}).then(data => {
+			
+		})
 	}
 	const onChangeAnswer = e => setAnswer(e.target.value)
 	const readyForStart = () => {
@@ -360,7 +364,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 			</Div>
 		</ModalPage>
 		<ModalPage
-		id="way"
+		id="pointContent"
 		settlingHeight={100}
 		onClose={setActiveModal.bind(this, null)}
 		header={<ModalPageHeader
@@ -369,16 +373,41 @@ const Home = inject('store')(observer(({ id, store }) => {
 				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}><Icon24Cancel /></PanelHeaderButton>}
 				</Fragment>
 			  )}
-			  right={(
-				<Fragment>
-				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}><Icon24Done /></PanelHeaderButton>}
-				  {platform === IOS && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}>Готово</PanelHeaderButton>}
-				</Fragment>
-			  )}
 		  >
-			Маршрут
+			О точке
 		  </ModalPageHeader>} >
-			<Way/>
+			  <Tabs>
+				  <TabsItem
+				  onClick={setActiveTabPoint.bind(this, 'task')}
+				  selected={activeTabPoint === 'task'}
+				  >
+					  Задание
+				  </TabsItem>
+				  <TabsItem
+				  onClick={setActiveTabPoint.bind(this, 'history')}
+				  selected={activeTabPoint === 'history'}
+				  >
+					  Справка
+				  </TabsItem>
+				  <TabsItem
+				  onClick={setActiveTabPoint.bind(this, 'waste')}
+				  selected={activeTabPoint === 'waste'}
+				  >
+					  Занималки
+				  </TabsItem>
+			  </Tabs>
+			{activeTabPoint === 'history' && <Div>
+				<Header mode="primary">{store.appUser?.point?.title}</Header>
+				<Text>{store.appUser?.point?.history}</Text>
+				
+			</Div>}
+			{activeTabPoint === 'waste' && <Div>
+				<Text>Здесь будут подсказки по развлекательной части точки</Text>
+				</Div>}
+			{activeTabPoint === 'task' && <Div>
+				<Header mode="primary">{store.appUser?.point?.task?.title}</Header>
+				<Text>{store.appUser?.point?.task?.description}</Text>
+				</Div>}
 		</ModalPage>
 		<ModalPage
 		id="check_ans"
@@ -435,7 +464,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 						key={store.teamContest._id}
 						before={<div style={{display: 'flex', alignItems: 'center', marginRight: 10}}><Labirint/></div>}
 						caption={getDate(store.teamContest.date)}
-						after={store.appUser.team.stage == 0 ? store.teamContest.status ? store.appUser.role == 1 ? store.appUser.status == 3 ? <Button mode="outline" onClick={setActiveModal.bind(this, 'rules')}>Начать забег</Button> : '' : '' : timeFormat('dd дн. hh ч.',store.secToTeamContest) : '-'}>
+						after={store.appUser.team.stage == 0 ? store.teamContest.status ? store.appUser.role == 1 ? store.appUser.team.status == 3 ? <Button mode="outline" onClick={setActiveModal.bind(this, 'rules')}>Начать забег</Button> : '' : '' : timeFormat('dd дн. hh ч.',store.secToTeamContest) : '-'}>
 							{store.teamContest.name}
 						</RichCell>}
 					</Group>
@@ -507,8 +536,8 @@ const Home = inject('store')(observer(({ id, store }) => {
 					const rate = team.rates.reduce((acc, rate) => acc + rate.rate, 0)
 					return (<RichCell
 				key={team._id}
-				before={<Avatar style={{ background: team.color}}/>}
-				text={team.stage ? `Точка ${team.stage+1}` : 'не стартовали'}
+				before={<TeamAvatar team={team}/>}
+				text={team.stage ? `Точка ${team.stage}` : 'не стартовали'}
 				after={rate + ' ' + declOfNum(rate , ['балл', 'балла', 'баллов'])}
 				caption={team.substage ? 'на точке' : 'решают загадку'}>
 					{team.name}
@@ -517,8 +546,8 @@ const Home = inject('store')(observer(({ id, store }) => {
 			</Group> }
 
 
-			{store.appUser.role == 3 && 
-				<Group header={<Header mode="secondary" aside={<><Link style={{marginRight: 24}} onClick={onAhtung}><Icon16ErrorCircleFill width={16} height={16}/></Link><Link onClick={() => {store.socket.emit('org:refresh_team');snackbarOk('Данные обновлены');}}><Icon28RefreshOutline width={20} height={20}/></Link></>}>Команды-участницы</Header>}>
+			{store.appUser.role == 3 && <>
+				<Group header={<Header mode="secondary" aside={<><Link style={{marginRight: 24}} onClick={setActiveModal.bind(this, 'pointContent')}><Icon20InfoCircleOutline width={25} height={25}/></Link><Link style={{marginRight: 24}} onClick={onAhtung}><Icon20FireCircleFillRed width={20} height={20}/></Link><Link onClick={() => {store.socket.emit('org:refresh_team');snackbarOk('Данные обновлены');}}><Icon28RefreshOutline width={25} height={25}/></Link></>}>Моя точка</Header>}>
 					<Cell disabled after={<Switch onClick={toggleShow}/>}>
 						Отображать оценки
 					</Cell>
@@ -527,16 +556,17 @@ const Home = inject('store')(observer(({ id, store }) => {
 					const leftTeam = team.rates.filter(rate => rate.org == store.appUser._id)
 					let index = (store.appUser.point?.num - 1) * 2
 					return (<RichCell
-						onClick={team.stage >= store.appUser.point?.num && team.substage ? leftTeam.length ? () => {setActiveModal('editRate'); setRateTeam(team); setIdRate(leftTeam[0])} : () => { setActiveModal('rateTeam1'); setRateTeam(team)}: null}
-						caption={`${institute[team.institute]}, гр.${team.group} ${team.timings[index] ? `, на задании точки с ${new Date(team.timings[index]).getHours()}:${new Date(team.timings[index]).getMinutes()}` : ''}`}
-						before={<Avatar style={{background: team?.color}} />}
-						after={team.stage >= store.appUser.point?.num ? leftTeam.length ? <Counter mode={isShow ? 'prominent' : 'primary'}>{isShow ? leftTeam[0].rate  : '-' }</Counter> : team.substage ? <><Icon16Chevron style={{color: '#4BB34B'}}/></> : 'решают загадку' : null}>
+						onClick={team.stage >= store.appUser.point?.num || (team.substage && team.stage == store.appUser.point?.num) ? leftTeam.length ? () => {setActiveModal('editRate'); setRateTeam(team); setIdRate(leftTeam[0])} : () => { setActiveModal('rateTeam1'); setRateTeam(team)}: null}
+						caption={`${institute[team.institute]}, гр.${team.group} ${team.timings[index] && team.stage == store.appUser.point?.num ? `, на задании точки с ${new Date(team.timings[index]).getHours()}:${new Date(team.timings[index]).getMinutes()}` : ''}`}
+						before={<TeamAvatar team={team}/>}
+						after={team.stage >= store.appUser.point?.num ? leftTeam.length ? <Counter mode={isShow ? 'prominent' : 'primary'}>{isShow ? leftTeam[0].rate  : '-' }</Counter> : store.appUser.point.num != team.stage ? <><Icon16Chevron style={{color: '#4BB34B'}}/></> : team.substage ? <Icon16Chevron style={{color: '#4BB34B'}}/> : 'решают загадку' : null}>
 						{team.name}
 					</RichCell>)
 					})
 				}
 			
 				</Group>
+				</>
 			}
 		
 

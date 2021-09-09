@@ -6,10 +6,10 @@ import { observer, Provider } from 'mobx-react'
 import { 
 	Icon28Users3Outline,
 	Icon28CalendarOutline,
-	Icon28UserCircleOutline } from '@vkontakte/icons'
-	import { Icon24RobotOutline } from '@vkontakte/icons';
-	import { Icon28CompassOutline } from '@vkontakte/icons';
-
+	Icon28InfoCircleOutline,
+	Icon24RobotOutline,
+	Icon28CompassOutline } from '@vkontakte/icons'
+	
 import Home from './panels/Home';
 import Hello from './panels/Hello'
 import Start from './panels/Start';
@@ -25,6 +25,7 @@ import TeamList from './panels/TeamList';
 
 
 import './custom.css'
+import Info from './panels/Info';
 
 const App = ({ platform }) => {
 	const [theme, setTheme] = useState('bright_light')
@@ -56,7 +57,7 @@ const App = ({ platform }) => {
 		}
 		fetchData().then(data => {
 			store.getAppUser(data).then((res) => {
-				if(res.data.user.team){
+				if(res.data.user.team || res.data.user.role > 2){
 					store.goPage('home')
 				} else {
 					store.goPage('start')
@@ -120,7 +121,15 @@ const App = ({ platform }) => {
 								text="Команда"
 								><Icon28Users3Outline/></TabbarItem>
 								}
-								{ (store.appUser.role == 5 || true) && <TabbarItem
+								{ store.appUser.role < 4 &&
+									<TabbarItem
+								onClick={onStoryChange}
+								selected={store.activePage === 'info'}
+								data-story="info"
+								text="Информация"
+								><Icon28InfoCircleOutline/></TabbarItem>
+								}
+								{ (store.appUser.role > 3 || true) && <TabbarItem
 								onClick={onStoryChange}
 								selected={store.activePage === 'admin'}
 								data-story="admin"
@@ -143,11 +152,14 @@ const App = ({ platform }) => {
 							
 								
 							
-							<View id="contestList" activePanel="contestList">
-								<ContestList id='contestList'/>
-							</View>
+							
+							<ContestList id='contestList'/>
+							
 							<View id="teamList" activePanel="teamList">
 								<TeamList id='teamList'/>
+							</View>
+							<View id="info" activePanel="info">
+								<Info id='info'/>
 							</View>
 
 							

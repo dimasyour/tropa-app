@@ -11,6 +11,7 @@ import useInput from './hooks/useInput';
 import { serverURL, access_token } from '../config';
 import bridge from '@vkontakte/vk-bridge'
 import { getTime, timeToDate, timeFormat, declOfNum, getDate } from '../utils/func';
+import TeamAvatar from './components/TeamAvatar';
 
 const AdminMenu = inject('store')(observer(({ id, store }) => {
     const platform = usePlatform('')
@@ -527,7 +528,7 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
 		  </ModalPageHeader>}
         >
             {teamsFound.length ? teamsFound.map(team => (
-                <Cell before={<Avatar style={{background: team.color}}/>} onClick={() => {
+                <Cell before={<TeamAvatar team={team}/>} onClick={() => {
                     handleSelectTeam(team)
                     setActiveModal('searchTeam_detailed');
                 }}>
@@ -619,7 +620,7 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
             textAlign: 'center',
             padding: 32,
           }}>
-            <Avatar size={96} style={{background: selectedTeam?.color}}/>
+            <TeamAvatar team={selectedTeam} size={64}/>
             <Title style={{marginBottom: 8, marginTop: 20}} level="2"
                    weight="medium">{selectedTeam?.name}</Title>
             </Gradient>
@@ -642,7 +643,7 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
                     </SimpleCell>
                 <Header mode="secondary">Участники</Header>
                 <List>
-                    {selectedTeam?.mates.map(user => (<Cell  before={<Avatar size={44} src={user.photo}/>} description={user.uid == selectedTeam?.leader.uid && 'Капитан'} key={user.uid}>{user.vkUser}</Cell>))}
+                    {selectedTeam?.mates.map(user => (<Cell  before={<Avatar size={44} src={user.photo}/>} description={user.uid == selectedTeam?.leader.uid && 'Капитан'} key={user.uid}>{user.vkUser || 'ещё не заходил'}</Cell>))}
                 </List>
                 <Header mode="secondary">Забег</Header>
                     {selectedTeam?.startAt && !selectedTeam?.finishAt && (
