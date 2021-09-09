@@ -45,10 +45,12 @@ const Home = inject('store')(observer(({ id, store }) => {
 	const institute = ['', 'ИВТС', 'ИПМКН', 'ИГДИС', 'ИЕН', 'ИПФКСиТ', 'ПТИ', 'ИПУ', 'ИГСН', 'МИ']
 
 	useEffect(() => {
-		const startParams = new URLSearchParams(window.location.search)
-		const allowed = startParams.get("vk_are_notifications_enabled")
-		if(allowed == 0){
-			setActiveModal('req_notify')
+		if(store.appUser.role > 3){
+			const startParams = new URLSearchParams(window.location.search)
+			const allowed = startParams.get("vk_are_notifications_enabled")
+			if(allowed == 0){
+				setActiveModal('req_notify')
+			}
 		}
 	}, [])
 
