@@ -4,6 +4,9 @@ import { getDate } from '../utils/func'
 import { Icon36Users3Outline, Icon28CalendarOutline, Icon24ClockOutline, Icon16ChevronOutline, Icon24Cancel } from '@vkontakte/icons';
 
 import Labirint from '../icons/Labirint'
+import { ReactComponent as Gold } from '../icons/gold.svg'
+import { ReactComponent as Silver } from '../icons/silver.svg'
+import { ReactComponent as Bronze } from '../icons/bronze.svg'
 
 import { View, Panel, PanelHeader, PanelHeaderButton, ModalPageHeader, RichCell, List, Tabs, TabsItem, Group, Div, Placeholder, ModalRoot, ModalPage, usePlatform, VKCOM, ANDROID, IOS } from '@vkontakte/vkui';
 const ContestList = inject('store')(observer(({ id, store }) => {
@@ -31,12 +34,27 @@ const ContestList = inject('store')(observer(({ id, store }) => {
 			{selectedContest?.name}
 		  </ModalPageHeader>} >
 			  {selectedContest.results ? <List>
-					{selectedContest?.results.map((team, index) => (
-						<Div>
-							{`${index+1} ${team.name}`}
-						</Div>
-					))}
-					
+					<div style={{ display: 'flex'}}>
+						<Gold style={{height: 120, flex: '2'}}/>
+						<div style={{flex: 8}}>
+							<div style={{margin: '10px 0', padding: '10px', background: '#FEEA97', fontWeight: 800, color: 'black', borderTopLeftRadius: '6px'}}>Победители забега</div>
+							<div style={{fontWeight: 800, fontSize: 40}}>{selectedContest.results[0]?.name}</div>
+						</div>
+					</div>
+					<div style={{ display: 'flex'}}>
+						<Silver style={{height: 120, flex: '2'}}/>
+						<div style={{flex: 8}}>
+							<div style={{margin: '10px 0', padding: '10px', background: '#E3E3E3', fontWeight: 800, color: 'black', borderTopLeftRadius: '6px'}}>2-ое место</div>
+							<div style={{fontWeight: 800, fontSize: 40}}>{selectedContest.results[1]?.name}</div>				
+						</div>
+					</div>
+					<div style={{ display: 'flex'}}>
+						<Bronze style={{height: 120, flex: '2'}}/>
+						<div style={{flex: 8}}>
+							<div style={{margin: '10px 0', padding: '10px', background: '#FFB973', fontWeight: 800, borderTopLeftRadius: '6px'}}>3-ое место</div>
+							<div style={{fontWeight: 800, fontSize: 40}}>{selectedContest.results[2]?.name}</div>
+						</div>
+					</div>
 				</List> :
 				<Placeholder
 				icon={<Icon24ClockOutline width={70} height={70} />}>

@@ -5,10 +5,8 @@ import { inject, observer } from 'mobx-react'
 
 import { Panel, PanelHeader, FormLayout, Group, Button, FormItem, Input, PanelHeaderBack, HorizontalScroll, HorizontalCell, Avatar, usePlatform, List, FormStatus } from '@vkontakte/vkui';
 import { Icon20Users } from '@vkontakte/icons'
-import { Icon12Cancel } from '@vkontakte/icons';
 import axios from 'axios';
 import { serverURL } from '../config';
-import { set } from 'mobx';
 
 const RegTeam = inject('store')(observer(({ id, store }) => {
     const [ nameTeam, setNameTeam ] = useState('')
@@ -49,7 +47,7 @@ const RegTeam = inject('store')(observer(({ id, store }) => {
         }).then((data) => {
             if(data){
                 if(data.data.err){
-                    return setStatus({title: 'Ошибка создания команды', text: data.data.text, type: 'error'})
+                    return setStatus({title: 'Ошибка создания команды', text: `${data.data.text}`, type: 'error'})
                 } else {
                     axios.get(serverURL + 'users',{
                         params: {

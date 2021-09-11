@@ -2,22 +2,80 @@ import React, { useState, useEffect } from 'react';
 import { CSSTransition } from 'react-transition-group'
 import { Button } from '@vkontakte/vkui'
 import '../css/taskcard.css';
+import ReactPlayer from 'react-player/lazy'
 
-import one from '../../img/tasks/1.jpg';
+import one from '../../img/tasks/1.png';
+import two from '../../img/tasks/2.jpg';
+import three from '../../img/tasks/3.png';
+import four from '../../img/tasks/4.png';
+import five from '../../img/tasks/5.jpg';
 import { Icon48WritebarDone } from '@vkontakte/icons';
 
 
-export default function NewsCard({ title, text, fileID, children, isComplete, isFailure }) {
-    var image
+export default function NewsCard({ title, text, file, children, isComplete, isFailure }) {
+    var image, video
     const [placeholder, setPlaceholder] = useState(!title)
-    switch(fileID) {
-        case 0:
-            image = one
-            break
-        default:
-            image = null;
-            break
+    if(file){
+        if(file.type == 'video'){
+            video = file.value
+            image = null
+        } else if(file.type == 'image'){
+            switch(file.value) {
+                case 0:
+                    image = one
+                    break
+                case 1:
+                    image = two
+                    break
+                case 2:
+                    image = three
+                    break
+                case 3:
+                    image = four
+                    break
+                case 4:
+                    image = five
+                    break
+                default:
+                    image = null;
+                    break
+            }
+            video = null
+        }
     }
+    
+    useEffect(() => {
+        if(file){
+            if(file.type == 'video'){
+                video = file.value
+                image = null
+            } else if(file.type == 'image'){
+                switch(file.value) {
+                    case 0:
+                        image = one
+                        break
+                    case 1:
+                        image = two
+                        break
+                    case 2:
+                        image = three
+                        break
+                    case 3:
+                        image = four
+                        break
+                    case 4:
+                        image = five
+                        break
+                    default:
+                        image = null;
+                        break
+                }
+                video = null
+            }
+        }
+        
+    }, [file])
+
     useEffect(() => {
         setPlaceholder(!title)
     }, [title])
@@ -26,6 +84,9 @@ export default function NewsCard({ title, text, fileID, children, isComplete, is
             {image && <div className="image-wraper">
                  <img src={image}></img>
             </div>}
+            {video && <div className="image-wraper">
+                    <ReactPlayer url={video} width="100%"/>
+                </div>}
             {!placeholder ? <div className="task-content">
                 <div className="task-title">{title}</div>
                 <div className="task-text">{text}</div>

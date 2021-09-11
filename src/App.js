@@ -65,6 +65,14 @@ const App = ({ platform }) => {
 				store.setStatusApp(1)
 			}).then(() => store.getContestList())
 		})
+		if(store.appUser){
+			if(store.appUser.team && store.teamContest){
+				if(!store.appUser.team.stage){
+					store.setStartPosition()
+				}
+			}
+		}
+		
 	}, []);
 	const menu = e => {
 		if(e.state){
@@ -158,11 +166,8 @@ const App = ({ platform }) => {
 							<View id="teamList" activePanel="teamList">
 								<TeamList id='teamList'/>
 							</View>
-							<View id="info" activePanel="info">
-								<Info id='info'/>
-							</View>
-
 							
+							<Info id='info'/>
 							<Home id='home'/>
 							<MyTeam id='team'/>
 							<Tasks id='tasks'/>

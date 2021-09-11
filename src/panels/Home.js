@@ -6,6 +6,7 @@ import { Icon16ErrorCircleOutline } from '@vkontakte/icons';
 import { Icon16Done, Icon16ErrorCircle,Icon20InfoCircleOutline, Icon24Cancel, Icon24Done,Icon20FireCircleFillRed, Icon24BrainOutline, Icon24ScanViewfinderOutline, Icon28Flash, Icon16Chevron, Icon28Notifications, Icon28RefreshOutline, } from '@vkontakte/icons';
 import { Icon12OnlineVkmobile } from '@vkontakte/icons';
 import Logo from '../icons/Logo'
+import 'dayjs/locale/ru'
 import Way from './Way';
 import Labirint from '../icons/Labirint'
 import TaskCard from './components/TaskCard'
@@ -13,7 +14,7 @@ import QRCode from 'react-qr-code'
 
 import bridge from '@vkontakte/vk-bridge'
 import axios from 'axios';
-import ReactPlayer from 'react-player';
+
 import TeamAvatar from './components/TeamAvatar';
 import { service_key } from '../config';
 
@@ -36,7 +37,6 @@ const Home = inject('store')(observer(({ id, store }) => {
 	const [ selectedTab, setSelectedTab ] = useState('rules')
 	const [ moders, setModers ] = useState([503012833])
 
-	const sortedByPoint = [ ...store.orgTeams ].sort((a,b) => b.stage - a.stage)
 	const idRateRef = useRef()
 	idRateRef.current = idRate
 
@@ -53,6 +53,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 			}
 		}
 	}, [])
+
 
 	const requestNotify = () => {
 		bridge.send("VKWebAppAllowNotifications").catch(err => {
@@ -75,6 +76,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 		})
 	}
 	const onAhtung = () => {
+		console.log('aaa')
 		setActiveModal('red_alert'); 
 		store.socket.emit('org:get_moders')
 	}
@@ -142,16 +144,13 @@ const Home = inject('store')(observer(({ id, store }) => {
 		setComment(e.target.value)
 	}
 	const sendNotify = () => {
-		const message = `${store.vk_u.first_name} ${store.vk_u.last_name} сообщает, что на точке ${store.appUser.point.title.toUpperCase()} происходит кошмар!`
+		const message = `На точке ${store.appUser.point.title.toUpperCase()} что-то произошло!`
 		bridge.send("VKWebAppCallAPIMethod", {"method": "notifications.sendMessage", "params": {"user_ids": moders.join(','), "v":"5.131", "random_id": new Date().getTime() , "access_token": service_key, "message": message}}).then(data => {
 			
 		})
 	}
 	const onChangeAnswer = e => setAnswer(e.target.value)
-	const readyForStart = () => {
-		setActiveModal(null)
-		store.socket.emit('team:ready_start', {teamId: store.appUser.team._id})
-	}
+
 	const checkAnswer = e => {
 		setActiveModal(null)
 		store.socket.emit('check_ans', {
@@ -168,10 +167,10 @@ const Home = inject('store')(observer(({ id, store }) => {
 		setAnswer('')
 	}
 	const toggleShow = () => setIsShow(!isShow)
-	const modalRoot =  store.appUser.team ? (<ModalRoot activeModal={activeModal}>
+	const modalRoot =  <ModalRoot activeModal={activeModal}>
 		<ModalCard
           id="endgame"
-          onClose={() => this.setActiveModal(null)}
+          onClose={() => setActiveModal(null)}
           icon={<Icon28Flash />}
           header="Последняя точка"
           subheader="Это была ваша последняя точка, бегите на финиш!"
@@ -185,7 +184,7 @@ const Home = inject('store')(observer(({ id, store }) => {
         </ModalCard>
 		<ModalCard 
 			id="req_notify"
-			onClose={() => this.setActiveModal(null)}
+			onClose={() => setActiveModal(null)}
 			header="Ахтунг-уведомления"
 			subheader="Тебя назначили модератором, а значит на тебя надеятся! Включи пожалуйста уведомления приложения, чтобы организаторы могли уведомить тебя о проблеме на точке"
 			icon={<Icon28Notifications key="icon" />}
@@ -198,7 +197,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 			</ModalCard>
 			<ModalCard 
 			id="red_alert"
-			onClose={() => this.setActiveModal(null)}
+			onClose={() => setActiveModal(null)}
 			header="Ахтунг-уведомление"
 			subheader="Ты уверен, что тебе нужна помощь свободных организаторов?"
 			icon={<Icon28Notifications key="icon" />}
@@ -431,13 +430,13 @@ const Home = inject('store')(observer(({ id, store }) => {
 			Проверка ответа
 		  </ModalPageHeader>} >
 			<FormLayout>
-				<FormItem top="Ваш вариант ответа">
+				<FormItem top="Как называется следующая точка?">
 					<Input onChange={onChangeAnswer}/>
 				</FormItem>
 			</FormLayout>
 		</ModalPage>
 		
-	</ModalRoot>) : null
+	</ModalRoot>
 	return (
 
 		<View id="home" activePanel="home" modal={modalRoot}>
@@ -472,27 +471,26 @@ const Home = inject('store')(observer(({ id, store }) => {
 					</Group>
 					}
 					{/* {store.appUser.team.start && store.appUser.team.currTask} */}
-					{store.appUser.role < 3 && store.activeContest && store.activeContest?.institute != store.appUser.team?.institute && <Group header={<Header mode="secondary">Активная тропа</Header>}>
-						<RichCell
-						key={store.activeContest._id}
-						before={<div style={{display: 'flex', alignItems: 'center', marginRight: 10}}><Labirint/></div>}>
-							{store.activeContest.name}
-						</RichCell>
-					</Group>
-					}
-			
-			{store.appUser.role < 3 && store.activeContest && store.activeContest?.institute != store.appUser.team?.institute && <Group header={<Header mode="secondary">Активная тропа</Header>}>
+			{store.appUser.role == 2 && store.activeContest && store.activeContest?.institute != store.appUser.team?.institute && <Group header={<Header mode="secondary">Активная тропа</Header>}>
 				<RichCell
 				key={store.activeContest._id}
 				before={<div style={{display: 'flex', alignItems: 'center', marginRight: 10}}><Labirint/></div>}>
 					{store.activeContest.name}
 				</RichCell>
-			</Group>}
+			</Group>
+			}
+			
+			{store.appUser.team && !store.appUser?.team.startAt && store.appUser.role < 2 && <TaskCard title="ВАЖНАЯ ИНФОРМАЦИЯ" text={`В связи с эпидемиологической обстановкой команды на старт будут приходить по очереди к определённому времени. Не приходите раньше, но и не опаздывайте!
+Мы ждем вас на старте у ИТЦ`}>
+						<div style={{textAlign: 'center', fontSize: 30}}>
+						{store.teamStartTime}
+						</div>
+						</TaskCard>}
 
-			{store.appUser.team && store.appUser.team.startAt && store.appUser.role < 3 && store.appUser.team.status != 5 && store.appUser?.team.stage != 20 && store.appUser?.team.stage != 21 && <Group header={<Header mode="secondary">Текущее задание</Header>}>
+			{store.appUser.team && store.appUser.team.startAt && store.appUser.role < 3 && store.appUser.team.status != 5 && store.appUser?.team.stage != 20 && store.appUser?.team.stage != 21 && <Group header={<Header mode="secondary" aside={<Link onClick={() => {store.socket.emit('user:update_data');snackbarOk('Данные обновлены');}}><Icon28RefreshOutline width={20} height={20}/></Link>} >Текущее задание</Header>}>
 
-				{<TaskCard isComplete={showComplete} isFailure={showFailure} title={!store.appUser.team.substage ? '???' : store.currentTask?.title} text={!store.appUser.team.substage ? store.currentTask?.text : store.currentTask?.text2}  fileID={!store.appUser.team.substage ? store.currentTask?.task.static : null} >
-					{!store.appUser.team.substage ? <Button before={<Icon24BrainOutline width={20} height={20}/>} mode="outline" onClick={setActiveModal.bind(this, 'check_ans')} stretched >Проверить ответ</Button> : <Button before={<Icon24ScanViewfinderOutline width={20} height={20}/>} mode="outline" onClick={readQR} stretched>Сканировать QR</Button>}
+				{<TaskCard isComplete={showComplete} isFailure={showFailure} title={!store.appUser.team.substage ? '???' : store.currentTask?.title} text={!store.appUser.team.substage ? store.currentTask?.task.text : 'Не забудьте попросить у организатора QR-код после выполнения задания'}  file={!store.appUser.team.substage ? store.currentTask?.task.static : null} >
+					{!store.appUser.team.substage ? <Button before={<Icon24BrainOutline width={20} height={20}/>} mode="outline" size="m" onClick={setActiveModal.bind(this, 'check_ans')} stretched >Проверить ответ</Button> : <Button size="m" before={<Icon24ScanViewfinderOutline width={20} height={20}/>} mode="outline" onClick={readQR} stretched>Сканировать QR</Button>}
 				</TaskCard>}
 			</Group>}
 
@@ -534,12 +532,12 @@ const Home = inject('store')(observer(({ id, store }) => {
 			}
 			{store.appUser.role > 3 && store.activeContest && <Group header={<Header mode="secondary" aside={<Link onClick={() => {store.socket.emit('org:refresh_team');snackbarOk('Данные обновлены');}}><Icon28RefreshOutline width={20} height={20}/></Link>}>Положение команд</Header>}>
 				{ 
-				sortedByPoint.map(team => {
+				store.orgTeams.map(team => {
 					const rate = team.rates.reduce((acc, rate) => acc + rate.rate, 0)
 					return (<RichCell
 				key={team._id}
 				before={<TeamAvatar team={team}/>}
-				text={team.stage ? `Точка ${team.stage}` : 'не стартовали'}
+				text={team.stage ? `Точка ${team.stage}` : `Стартуют в ${dayjs(new Date(store.activeContest.date)).locale('ru').format('HH:mm')}`}
 				after={rate + ' ' + declOfNum(rate , ['балл', 'балла', 'баллов'])}
 				caption={team.substage ? 'на точке' : 'решают загадку'}>
 					{team.name}
@@ -571,13 +569,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 				</>
 			}
 		
-
-		{/* <Button mode="outline" onClick={setActiveModal.bind(this, 'way')}>Маршрут</Button> */}
-	
 		
-		
-		
-		{/* <ReactPlayer url={"https://www.youtube.com/watch?v=AeDJ9WqpKh4"}/> */}
 		{store.homeSnackbar}
 		{snackbar}
 	</Panel>

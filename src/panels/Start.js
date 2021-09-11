@@ -15,7 +15,7 @@ const Start = inject('store')(observer(({ id, store, theme }) => {
 			<Div style={{flex: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#4BB34B', paddingTop: '56px'}}>
 				<Title level="1" weight="heavy" style={{ marginBottom: 53, marginTop: 30, textAlign: 'center', color: 'white' }}>Добро пожаловать на игру</Title>
 				{/* <Text weight="regular" style={{ marginBottom: 16, textAlign: 'center' }}>Приветствуем вас в приложении увлекательной игры</Text> */}
-				<Logo />
+				<Logo color="white"/>
 			</Div>
 			<div style={{ borderBottomRightRadius: "50%", borderBottomLeftRadius: "50%", background: '#4BB34B', height: 80	}}></div>
 			<Div style={{flex: 2}}>

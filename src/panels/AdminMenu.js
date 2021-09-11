@@ -592,10 +592,10 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
                         <SelectMimicry onClick={setActiveModal.bind(this, 'selectPoint')} onChange={onChangePoint} placeholder={selectedUser?.point?.title ?? "Выберите точку"}/>
                     </FormItem>
                 </FormLayout>}
-                {selectedUser?.role != 3 && <CellButton onClick={setOrgAlert}>Назначить организатором</CellButton>}
-                {selectedUser?.role == 3 && <CellButton mode="danger" onClick={updateOrgStatus.bind(this, 2)}>Разжаловать организатора</CellButton>}
-                {selectedUser?.role < 3 && <CellButton onClick={setModerAlert}>Назначить модератором</CellButton>}
-                {selectedUser?.role == 4 && <CellButton onClick={updateOrgStatus.bind(this, 2)}>Разжаловать модератором</CellButton>}
+                {selectedUser?.role != 3 && store.appUser.role == 5 && <CellButton onClick={setOrgAlert}>Назначить организатором</CellButton>}
+                {selectedUser?.role == 3 && store.appUser.role == 5 && <CellButton mode="danger" onClick={updateOrgStatus.bind(this, 2)}>Разжаловать организатора</CellButton>}
+                {selectedUser?.role < 3 && store.appUser.role == 5 && <CellButton onClick={setModerAlert}>Назначить модератором</CellButton>}
+                {selectedUser?.role == 4 && store.appUser.role == 5 && <CellButton onClick={updateOrgStatus.bind(this, 2)}>Разжаловать модератора</CellButton>}
             </Group>
         </ModalPage>
         <ModalPage id="searchTeam_detailed"
@@ -643,14 +643,14 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
                     </SimpleCell>
                 <Header mode="secondary">Участники</Header>
                 <List>
-                    {selectedTeam?.mates.map(user => (<Cell  before={<Avatar size={44} src={user.photo}/>} description={user.uid == selectedTeam?.leader.uid && 'Капитан'} key={user.uid}>{user.vkUser || 'ещё не заходил'}</Cell>))}
+                    {selectedTeam?.mates.map(user => (<Cell onClick={() => document.location.href = `https://vk.com/id${user.uid}`}  before={<Avatar size={44} src={user.photo}/>} description={user.uid == selectedTeam?.leader.uid && 'Капитан'} key={user.uid}>{user.vkUser || 'ещё не заходил'}</Cell>))}
                 </List>
                 <Header mode="secondary">Забег</Header>
                     {selectedTeam?.startAt && !selectedTeam?.finishAt && (
                         <>
                             <SimpleCell multiline>
                                 <InfoRow header="Местонахождение">
-                                    {selectedTeam?.substage ? 'на точке ' : 'решают загадку перед '} {selectedTeam?.stage}
+                                    {selectedTeam?.substage ? 'на точке ' : 'решают загадку перед точкой '} {selectedTeam?.stage}
                                 </InfoRow>
                             </SimpleCell>
                             <SimpleCell multiline>

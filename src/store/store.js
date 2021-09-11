@@ -8,6 +8,8 @@ import bridge from '@vkontakte/vk-bridge'
 import { serverURL, access_token } from '../config'
 import { timeToDate } from '../utils/func';
 import Status from '../panels/Status';
+import dayjs from 'dayjs';
+import 'dayjs/locale/ru'
 
 configure({ enforceActions: "always"})
 
@@ -26,6 +28,7 @@ class MainStore{
             currentTask: observable,
             cycle: observable,
             orgTeams: observable,
+            startPosition: observable,
 
             teamStatus: computed,
             userRole: computed,
@@ -33,8 +36,10 @@ class MainStore{
             teamContest: computed,
             secToTeamContest: computed,
             hashNextPoint: computed,
+            teamStartTime: computed,
 
             setAppUser: action,
+            setStartPosition: action,
             setOrgTeams: action,
             setStatusApp: action,
             goPage: action,
@@ -59,13 +64,16 @@ class MainStore{
     currentTask = null
     cycle = null
     orgTeams = []
+    startPosition = -1
     
     
     socket = null
-    createConnection = () => {
+    createConnection = (type) => {
         this.socket = io("https://leton.cc/", {
             reconnectionDelayMax: 10000,
-            query: {
+            query: type === 'org' ? {
+                "role": this.appUser.role
+            } : {
                 "team": this.appUser.team._id, 
                 "point": this.appUser.team.stage, 
                 "role": this.appUser.role
@@ -90,6 +98,7 @@ class MainStore{
                 this.socket.connect()
             }, 3000)
 		})
+        this.socket.on('user:update_data', data => this.appUser = data.user)
         this.socket.on('org:update_team', (data) => {
             this.setOrgTeams(data.teams)
 		})
@@ -117,6 +126,14 @@ class MainStore{
         axios.get(serverURL + 'points').then(data => {
             this.cycle = data.data.points
         })
+    }
+    setStartPosition = () => {
+        axios.get(serverURL + 'teams/startPos', { params: {
+            id: this.appUser.team._id,
+            institutes  : this.teamContest.institute.join('')
+        }}).then((data => {
+            this.startPosition = data.data.position
+        }))
     }
     setCurrentTask = task => this.currentTask = task
     setSocketStatus = status => this.socketStatus = status
@@ -189,15 +206,31 @@ class MainStore{
         ]
         return status[this.appUser.team.status]
     }
-
+    get teamStartTime(){
+        console.log(this.startPosition)
+        const startContest = this.teamContest?.date ? new Date(this.teamContest.date) : null
+        
+        const date = startContest ? new Date(startContest.setMinutes(startContest.getMinutes() + 7*this.startPosition)) : null
+        if(date){
+            return dayjs(date).locale('ru').format('DD MMMM в HH:mm')
+        }
+    }
 }
 
 const mainStore = new MainStore()
 
 autorun(() => {
     mainStore.updateTeammates()
-    if(((mainStore.appUser.team.stage != 21 && mainStore.activeContest?.institute.includes(mainStore.appUser.team.institute)) || mainStore.appUser.role > 2) && !mainStore.socket){
-        mainStore.createConnection()
+    if(mainStore.appUser){
+        if(!mainStore.socket){
+            if(mainStore.appUser.team && mainStore.appUser.team.stage != 21 && mainStore.activeContest?.institute.includes(mainStore.appUser.team.institute)){
+                mainStore.createConnection()
+            } else if(mainStore.appUser.role > 2){
+                mainStore.createConnection('org')
+            }
+        }
     }
+    mainStore.setStartPosition()
+    
 })
 export default makeInspectable(mainStore)
