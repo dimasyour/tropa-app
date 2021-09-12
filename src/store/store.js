@@ -209,13 +209,7 @@ class MainStore{
         return status[this.appUser.team.status]
     }
     get teamStartTime(){
-        console.log(this.startPosition)
-        const startContest = this.teamContest?.date ? new Date(this.teamContest.date) : null
-        
-        const date = startContest ? new Date(startContest.setMinutes(startContest.getMinutes() + 7*this.startPosition)) : null
-        if(date){
-            return dayjs(date).locale('ru').format('DD MMMM в HH:mm')
-        }
+        return dayjs(this.appUser.team.startTime).locale('ru').format('DD MMMM в HH:mm')
     }
 }
 

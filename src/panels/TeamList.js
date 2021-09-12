@@ -8,6 +8,8 @@ import { serverURL, access_token, service_key } from '../config'
 import bridge from '@vkontakte/vk-bridge'
 import { Icon28ChevronBack, Icon24Back, Icon16CheckCircleOutline} from '@vkontakte/icons'
 import { snackbarOk, snackbarErr } from '../utils/func'
+import dayjs from 'dayjs';
+import 'dayjs/locale/ru'
 
 const TeamList = inject('store')(observer(({ id, store }) => {
     const osName = usePlatform()
@@ -53,7 +55,7 @@ const TeamList = inject('store')(observer(({ id, store }) => {
             snackbarOk(data.data.text, setSnackbar)
             setNeedUpdate(!needUpdate)
             if(status == 3){
-                sendNotify(team.leader.uid, 'Ваша заявка одобрена')
+                sendNotify(team.leader.uid, `Ваша заявка одобрена. Ждём вас на старте: ${dayjs(new Date(data.data.startTime)).locale('ru').format('DD MMMM в HH:mm')}`)
             }
         }).catch(err => {
             snackbarErr(err.message, setSnackbar)

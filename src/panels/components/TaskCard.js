@@ -40,7 +40,7 @@ export default function NewsCard({ task, children, stage, info }) {
                 <ReactPlayer url={task.task.static.value} width="100%"/>
             </div>}
         {!placeholder ? <div className="task-content">
-            <div className="task-title">{ stage ? task.title : '???'}</div>
+            <div className="task-title">{ !stage ? '???' : task.title}</div>
             <div className="task-text">{!stage ? task.task.text : 'Не забудьте попросить QR у организатора'}</div>
             {children}
         </div> : 

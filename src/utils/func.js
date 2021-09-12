@@ -1,5 +1,11 @@
 import { Snackbar, Avatar } from '@vkontakte/vkui'
 import { Icon16Done, Icon16ErrorCircle} from '@vkontakte/icons'
+import ivts from '../img/institutes/1_ivts.png'
+import ipu from '../img/institutes/7_ipu.png'
+import ipmkn_ien from '../img/institutes/12_ipmkn-ien.png'
+import igsn_ipfkst from '../img/institutes/11_igsn-ipfkst.png'
+import igds_pti from '../img/institutes/10_igds-pti.png'
+import med from '../img/institutes/9_med.png'
 
 const timeToDate = (date, from = new Date()) => {
 	date = new Date(date)
@@ -19,6 +25,27 @@ const timeFormat = (format, value) => {
 	const m = Math.floor((value - 24 * 60 * 60 * d - 60 * 60 * h) / 60)
 	const s = Math.floor((value - 24 * 60 * 60 * d - 60 * 60 * h - 60 * m))
 	return format.replace('dd', d).replace('hh', h < 10 ? '0' + h : h).replace('mm', m < 10 ? '0' + m : m).replace('ss', s < 10 ? '0' + s : s)
+}
+const getIcon = institutes => {
+	if(institutes.length == 1){
+		switch(institutes[0]){
+			case 1:
+				return ivts
+			case 7:
+				return ipu
+			case 9:
+				return med
+		}
+	} else if(institutes.length == 2){
+		switch(institutes[0]){
+			case 3:
+				return igds_pti
+			case 5:
+				return igsn_ipfkst
+			case 2:
+				return ipmkn_ien
+		}
+	}
 }
 function declOfNum(n, text_forms) {  
     n = Math.abs(n) % 100; 
@@ -58,4 +85,4 @@ const snackbarErr = (text, setter) => {
 	  </Snackbar>)
 }
 
-export { timeToDate, timeFormat, declOfNum, getDate, snackbarOk, snackbarErr, getTime, }
+export { timeToDate, timeFormat, declOfNum, getDate, snackbarOk, snackbarErr, getTime, getIcon }

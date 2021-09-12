@@ -3,7 +3,7 @@ import { inject, observer } from 'mobx-react'
 import bridge from '@vkontakte/vk-bridge'
 import {access_token } from '../config'
 import { Icon28BookmarkOutline, Icon20GlobeOutline, Icon20ArticleOutline, Icon20HelpOutline, Icon24BroadcastOutline, Icon24MessageOutline, Icon24Cancel } from '@vkontakte/icons'
-import { View, Panel, Link, PanelHeader, MiniInfoCell, SimpleCell, Group, Cell, Header, ModalPage, ModalRoot, Title, ModalPageHeader, ANDROID, VKCOM, PanelHeaderButton, usePlatform, Gradient, Avatar } from '@vkontakte/vkui';
+import { View, Panel, Link, PanelHeader, MiniInfoCell, SimpleCell, Group, Cell, Header, ModalPage, ModalRoot, Title, ModalPageHeader, ANDROID, VKCOM, PanelHeaderButton, usePlatform, Gradient, Avatar, Text } from '@vkontakte/vkui';
 import impuls from '../img/impuls.jpg'
 
 const Info = inject('store')(observer(({ id, store }) => {
@@ -33,7 +33,19 @@ const Info = inject('store')(observer(({ id, store }) => {
 		  >
 			Правила
 		  </ModalPageHeader>} >
-		  
+		  <Text weight="semibold">Дорогие первокурсники! Чтобы ваша «Тропа» прошла без проблем и оставила только хорошие воспоминания, соблюдайте эти несложные правила:</Text>
+
+      <Text weight="semibold">1. Не выбегайте на проезжую часть. Вся игра проходит на территории студенческого городка, а именно в квадрате, окруженном улицами – проспектом Ленина, ул. Агеева, ул. Фридриха Энгельса, ул. Мира.</Text>
+
+      <Text weight="bold">В противном случае вы автоматически выбываете из игры и получаете дисциплинарное взыскание по университету.</Text>
+
+      <Text weight="semibold">2. Не ругайтесь матом и не употребляйте в своей речи нецензурные выражения.</Text>
+
+      <Text weight="semibold">3. Не употребляйте спиртные напитки. На нашем мероприятии сухой закон.</Text>
+
+      <Text weight="semibold">4. Не курите во время игры, не ставьте кальяны и не пользуйтесь системой IQOS и вейпами.</Text>
+
+      <Text weight="semibold">В случае любых проблем Вы можете нажать на иконку огонька в приложении или позвонить главному организатору Анастасии Артемовой. Её номер вы найдете на бейджах организаторов.</Text>
 			
 		</ModalPage>
         <ModalPage

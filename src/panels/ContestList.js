@@ -1,6 +1,6 @@
 import React, { Fragment } from 'react';
 import { inject, observer } from 'mobx-react'
-import { getDate } from '../utils/func'
+import { getDate, getIcon } from '../utils/func'
 import { Icon36Users3Outline, Icon28CalendarOutline, Icon24ClockOutline, Icon16ChevronOutline, Icon24Cancel } from '@vkontakte/icons';
 
 import Labirint from '../icons/Labirint'
@@ -8,7 +8,8 @@ import { ReactComponent as Gold } from '../icons/gold.svg'
 import { ReactComponent as Silver } from '../icons/silver.svg'
 import { ReactComponent as Bronze } from '../icons/bronze.svg'
 
-import { View, Panel, PanelHeader, PanelHeaderButton, ModalPageHeader, RichCell, List, Tabs, TabsItem, Group, Div, Placeholder, ModalRoot, ModalPage, usePlatform, VKCOM, ANDROID, IOS } from '@vkontakte/vkui';
+
+import { View, Panel, Avatar, PanelHeader, PanelHeaderButton, ModalPageHeader, RichCell, List, Tabs, TabsItem, Group, Div, Placeholder, ModalRoot, ModalPage, usePlatform, VKCOM, ANDROID, IOS } from '@vkontakte/vkui';
 const ContestList = inject('store')(observer(({ id, store }) => {
 	const platform = usePlatform()
 	const [ activeTab, setActiveTab ] = React.useState('future')
@@ -17,6 +18,8 @@ const ContestList = inject('store')(observer(({ id, store }) => {
 
 	const lastContest = store.contestList.filter(contest => contest.status == 2)
 	const futureContest = store.contestList.filter(contest => contest.status == 0)
+
+	
 	
 	const modalRoot = (<ModalRoot activeModal={activeModal}>
 		<ModalPage id='result' 
@@ -91,7 +94,7 @@ const ContestList = inject('store')(observer(({ id, store }) => {
 						{futureContest.length ? futureContest.map(contest => (
 							<RichCell
 							key={contest._id}
-							before={<div style={{display: 'flex', alignItems: 'center', marginRight: 10}}><Labirint/></div>}
+							before={<Avatar src={getIcon(contest.institute)} mode="app"/>}
 							caption={getDate(contest.date)}>
 								{contest.name} {store.appUser.team ? store.teamContest._id == contest._id ? <Icon36Users3Outline width={20} height={20} style={{display: 'inline-block'}}/> : null : null}
 							</RichCell>
@@ -109,7 +112,7 @@ const ContestList = inject('store')(observer(({ id, store }) => {
 						{lastContest.length ? lastContest.map(contest => (
 							<RichCell
 							key={contest._id}
-							before={<div style={{display: 'flex', alignItems: 'center', marginRight: 10}}><Labirint/></div>}
+							before={<Avatar src={getIcon(contest.institute)} mode="app"/>}
 							caption={getDate(contest.date)}
 							after={<Icon16ChevronOutline width={24} height={24}/>}
 							onClick={() => { setSelectedContest(contest); setActiveModal('result');}}>
