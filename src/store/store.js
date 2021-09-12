@@ -61,7 +61,7 @@ class MainStore{
     vk_mates = []
     contestList = []
     socketStatus = <Status mode='default'>Откл.</Status>
-    currentTask = null
+    currentTask = {}
     cycle = null
     orgTeams = []
     startPosition = -1
@@ -105,6 +105,8 @@ class MainStore{
         this.socket.on('team:update_team', data => {
             this.getAppUser()
         })
+        this.socket.on('team:new_task', data => this.setCurrentTask(data.task))
+        this.socket.on('user:get_task', data => this.setCurrentTask(data.task))
         this.socket.on('connect_error', () => {
             this.setSocketStatus(<Status mode='danger'>Ошибка подключения</Status>)
             setTimeout(() => { 
@@ -231,6 +233,5 @@ autorun(() => {
         }
     }
     mainStore.setStartPosition()
-    
 })
 export default makeInspectable(mainStore)

@@ -4,7 +4,7 @@ import { inject, observer } from 'mobx-react'
 
 import { Group, Panel, RichCell, Button, Avatar, Link, PanelHeader, PanelHeaderButton, usePlatform, IOS, Placeholder } from '@vkontakte/vkui';
 import axios from 'axios';
-import { serverURL, access_token } from '../config'
+import { serverURL, access_token, service_key } from '../config'
 import bridge from '@vkontakte/vk-bridge'
 import { Icon28ChevronBack, Icon24Back, Icon16CheckCircleOutline} from '@vkontakte/icons'
 import { snackbarOk, snackbarErr } from '../utils/func'
@@ -15,6 +15,11 @@ const TeamList = inject('store')(observer(({ id, store }) => {
     const [avatars, setAvatars] = useState([])
     const [needUpdate, setNeedUpdate] = useState(false)
     const [snackbar, setSnackbar] = useState(null)
+    const sendNotify = (leader, message) => {
+		bridge.send("VKWebAppCallAPIMethod", {"method": "notifications.sendMessage", "params": {"user_ids": leader, "v":"5.131", "random_id": new Date().getTime() , "access_token": service_key, "message": message}}).then(data => {
+			console.log(data)
+		})
+	}
     useEffect(() =>{
         store.togglePopout()
         axios.get(serverURL + 'teams/getUnconfirmed').then(data => {
@@ -36,17 +41,20 @@ const TeamList = inject('store')(observer(({ id, store }) => {
         'на рассмотрении',
         'подтверждена'
     ]
-    const updateStatus = (teamId ,status) => {
+    const updateStatus = (team ,status) => {
         store.togglePopout()
         axios.get(serverURL + 'teams/update', {
             params: { 
                 type: 'status',
-                teamId: teamId,
+                teamId: team._id,
                 newStatus: status
             }
         }).then(data => {
             snackbarOk(data.data.text, setSnackbar)
             setNeedUpdate(!needUpdate)
+            if(status == 3){
+                sendNotify(team.leader.uid, 'Ваша заявка одобрена')
+            }
         }).catch(err => {
             snackbarErr(err.message, setSnackbar)
         })
@@ -70,9 +78,9 @@ const TeamList = inject('store')(observer(({ id, store }) => {
                     after={team.mates.length + ' чел.'}
                     actions={
                     <React.Fragment>
-                        <Button onClick={updateStatus.bind(this, team._id, 3)}>Принять</Button>
-                        {team.status == 2 && <Button onClick={updateStatus.bind(this, team._id, 1)} mode="secondary">Отложить</Button>}
-                        {team.status > 0 && <Button onClick={updateStatus.bind(this, team._id, 0)} mode="destructive">Отклонить</Button>}
+                        <Button onClick={updateStatus.bind(this, team, 3)}>Принять</Button>
+                        {team.status == 2 && <Button onClick={updateStatus.bind(this, team, 1)} mode="secondary">Отложить</Button>}
+                        {team.status > 0 && <Button onClick={updateStatus.bind(this, team, 0)} mode="destructive">Отклонить</Button>}
                     </React.Fragment>
                     }
                     >

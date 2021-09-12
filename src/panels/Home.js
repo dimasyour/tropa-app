@@ -51,6 +51,12 @@ const Home = inject('store')(observer(({ id, store }) => {
 			if(allowed == 0){
 				setActiveModal('req_notify')
 			}
+		} else if(store.appUser.role == 1){
+			const startParams = new URLSearchParams(window.location.search)
+			const allowed = startParams.get("vk_are_notifications_enabled")
+			if(allowed == 0){
+				setActiveModal('req_notify_leader')
+			}
 		}
 	}, [])
 
@@ -76,7 +82,6 @@ const Home = inject('store')(observer(({ id, store }) => {
 		})
 	}
 	const onAhtung = () => {
-		console.log('aaa')
 		setActiveModal('red_alert'); 
 		store.socket.emit('org:get_moders')
 	}
@@ -166,6 +171,9 @@ const Home = inject('store')(observer(({ id, store }) => {
 		})
 		setAnswer('')
 	}
+	const finishtask = {title:"Завершение забега", text:"Вы большие молодцы. Вам остался один шаг до финиша"}
+	const attention = { title:"ВАЖНАЯ ИНФОРМАЦИЯ", text:`В связи с эпидемиологической обстановкой команды на старт будут приходить по очереди к определённому времени. Не приходите раньше, но и не опаздывайте!
+	Мы ждем вас на старте у ИТЦ`}
 	const toggleShow = () => setIsShow(!isShow)
 	const modalRoot =  <ModalRoot activeModal={activeModal}>
 		<ModalCard
@@ -187,6 +195,19 @@ const Home = inject('store')(observer(({ id, store }) => {
 			onClose={() => setActiveModal(null)}
 			header="Ахтунг-уведомления"
 			subheader="Тебя назначили модератором, а значит на тебя надеятся! Включи пожалуйста уведомления приложения, чтобы организаторы могли уведомить тебя о проблеме на точке"
+			icon={<Icon28Notifications key="icon" />}
+			actions={
+				<Button size="l" mode="primary" onClick={() => { setActiveModal(null); requestNotify()}}>
+				  Согласен
+				</Button>
+			  }
+		>
+			</ModalCard>
+			<ModalCard 
+			id="req_notify_leader"
+			onClose={() => setActiveModal(null)}
+			header="Уведомления"
+			subheader="Теперь ты капитан команды, а поэтому нам бы хотелось держать тебя в курсе всех событий. Разреши, пожалуйста, уведомления"
 			icon={<Icon28Notifications key="icon" />}
 			actions={
 				<Button size="l" mode="primary" onClick={() => { setActiveModal(null); requestNotify()}}>
@@ -480,16 +501,15 @@ const Home = inject('store')(observer(({ id, store }) => {
 			</Group>
 			}
 			
-			{store.appUser.team && !store.appUser?.team.startAt && store.appUser.role < 2 && <TaskCard title="ВАЖНАЯ ИНФОРМАЦИЯ" text={`В связи с эпидемиологической обстановкой команды на старт будут приходить по очереди к определённому времени. Не приходите раньше, но и не опаздывайте!
-Мы ждем вас на старте у ИТЦ`}>
+			{store.appUser.team && !store.appUser?.team.startAt && store.appUser.role < 2 && <TaskCard info={attention}>
 						<div style={{textAlign: 'center', fontSize: 30}}>
 						{store.teamStartTime}
 						</div>
 						</TaskCard>}
 
-			{store.appUser.team && store.appUser.team.startAt && store.appUser.role < 3 && store.appUser.team.status != 5 && store.appUser?.team.stage != 20 && store.appUser?.team.stage != 21 && <Group header={<Header mode="secondary" aside={<Link onClick={() => {store.socket.emit('user:update_data');snackbarOk('Данные обновлены');}}><Icon28RefreshOutline width={20} height={20}/></Link>} >Текущее задание</Header>}>
+			{store.appUser.team && store.appUser.team.startAt && store.appUser.role < 3 && store.appUser.team.status != 5 && store.appUser?.team.stage != 20 && store.appUser?.team.stage != 21 && <Group header={<Header mode="secondary" aside={<Link onClick={() => {store.socket.emit('user:get_task', { team: store.appUser.team._id});snackbarOk('Данные обновлены');}}><Icon28RefreshOutline width={20} height={20}/></Link>} >Текущее задание</Header>}>
 
-				{<TaskCard isComplete={showComplete} isFailure={showFailure} title={!store.appUser.team.substage ? '???' : store.currentTask?.title} text={!store.appUser.team.substage ? store.currentTask?.task.text : 'Не забудьте попросить у организатора QR-код после выполнения задания'}  file={!store.appUser.team.substage ? store.currentTask?.task.static : null} >
+				{<TaskCard task={store.currentTask} stage={store.appUser.team.substage}>
 					{!store.appUser.team.substage ? <Button before={<Icon24BrainOutline width={20} height={20}/>} mode="outline" size="m" onClick={setActiveModal.bind(this, 'check_ans')} stretched >Проверить ответ</Button> : <Button size="m" before={<Icon24ScanViewfinderOutline width={20} height={20}/>} mode="outline" onClick={readQR} stretched>Сканировать QR</Button>}
 				</TaskCard>}
 			</Group>}
@@ -501,7 +521,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 			</Placeholder>}
 
 			{store.appUser.team && store.appUser?.team.stage == 20 && <div>
-			<TaskCard title="Завершение забега" text="Вы большие молодцы. Вам остался один шаг до финиша">
+			<TaskCard info={finishtask}>
 				<Button mode="outline" before={<Icon12OnlineVkmobile/>} onClick={setActiveModal.bind(this, 'finish')} stretched>Задание</Button>
 			</TaskCard>
 			</div>}
