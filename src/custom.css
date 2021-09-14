@@ -17,3 +17,6 @@ body[scheme="space_gray"]{
     --placeholder_animation: linear-gradient(to right, #232324 2%, #363738 18%, #232324 33%); 
     --placeholder_background: #1b1c1d;
 }
+.vkuiAvatar__children{
+    color: white;
+} 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, Fragment, useRef } from 'react';
 import { inject, observer } from 'mobx-react'
-import { Panel, Avatar, Header, PanelHeader, Tabs, TabsItem, List, Snackbar, ModalCard, Counter, FormItem, Div, Placeholder, Button, Cell, Switch, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, VKCOM, ViewWidth, RichCell, Caption, Link, View, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, FormLayout, Radio, Input, Text } from '@vkontakte/vkui';
+import { Panel, Avatar, Header, PanelHeader, Tabs, TabsItem, List, Snackbar, ModalCard, Counter, FormItem, Div, Placeholder, Button, Cell, Switch, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, VKCOM, ViewWidth, Alert, RichCell, Link, View, Title, Caption, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, FormLayout, Radio, Input, Text } from '@vkontakte/vkui';
 import { timeToDate, timeFormat, getDate, declOfNum, getIcon } from '../utils/func';
 import { Icon16ErrorCircleOutline } from '@vkontakte/icons';
 import { Icon16Done, Icon16ErrorCircle,Icon20InfoCircleOutline, Icon24Cancel, Icon24Done,Icon20FireCircleFillRed, Icon24BrainOutline, Icon24ScanViewfinderOutline, Icon28Flash, Icon16Chevron, Icon28Notifications, Icon28RefreshOutline, } from '@vkontakte/icons';
@@ -16,12 +16,15 @@ import CustomPopout from './components/CustomPopout';
 import QrReader from 'react-qr-reader'
 import bridge from '@vkontakte/vk-bridge'
 import axios from 'axios';
+import final from '../img/final.png';
 
 import TeamAvatar from './components/TeamAvatar';
 import { Icon28GhostSimleOutline } from '@vkontakte/icons';
 import { service_key } from '../config';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru'
+import ReactPlayer from 'react-player';
+import { LazyLoadImage } from 'react-lazy-load-image-component';
 
 const Home = inject('store')(observer(({ id, store }) => {
 	const platform = usePlatform()
@@ -37,11 +40,11 @@ const Home = inject('store')(observer(({ id, store }) => {
 	const [ idRate, setIdRate ] = useState(null)
 	const [ comment, setComment ] = useState('')
 	const [ answer, setAnswer ] = useState('')
-	const [ rate, setRate ] = useState(0)
+	const [ rate, setRate ] = useState(-1)
 	const [ showFailure, setShowFailure ] = useState(false)
 	const [ showComplete, setShowComplete ] = useState(false)
 	const [ selectedTab, setSelectedTab ] = useState('rules')
-	const [ moders, setModers ] = useState([503012833])
+	const [ moders, setModers ] = useState([])
 
 	const idRateRef = useRef()
 
@@ -87,8 +90,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 			setActiveModal(null)
 		})
 		store.socket.on('org:get_moders', (data) => {
-			// console.log('moders', data)
-			// setModers(data.moders)
+			setModers(data.moders)
 		})
 	}
 	const onAhtung = () => {
@@ -112,6 +114,24 @@ const Home = inject('store')(observer(({ id, store }) => {
 		  </Snackbar>)
 	}
 
+	const confirmCloseQr = () => {
+		setPopout(<Alert
+			actions={[{
+				title: 'Отмена',
+				autoclose: true,
+				mode: 'cancel'
+			  }, {
+				title: 'Подтверждаю',
+				autoclose: true,
+				mode: 'destructive',
+				action: () => setActiveModal('rateTeam2'),
+			  }]}
+			  actionsLayout="horizontal"
+			  onClose={setPopout.bind(this, null)}
+			  header="Подтверждение действия"
+			  text="Команда получила загадку и ушла с точки?"
+		/>)
+	}
 
 	const readQR = () => {
 		if(platform == ANDROID) {
@@ -120,12 +140,10 @@ const Home = inject('store')(observer(({ id, store }) => {
 				store.socket.emit('qrcode', {qrHash: code_data, stage: store.appUser.team.stage, team: store.appUser.team._id})
 				store.socket.on('qrcode_response', data => {
 					if(data.response == 20){
-						store.getAppUser()
 						return setActiveModal('endgame')
 					}
 					if(data.response){
 						snackbarOk('Верный QR')
-						store.getAppUser()
 					} else {
 						snackbarErr('QR не подходит')
 					}
@@ -298,19 +316,21 @@ const Home = inject('store')(observer(({ id, store }) => {
 					>Старт</TabsItem>
 				</Tabs>
 				{selectedTab == 'rules' && <FormItem>
-				<Text  weight="semibold">Дорогие первокурсники! Чтобы ваша «Тропа» прошла без проблем и оставила только хорошие воспоминания, соблюдайте эти несложные правила:</Text>
+				<div style={{padding: '0 10px'}}>
+					<Text weight="bold">Дорогие первокурсники! Чтобы ваша «Тропа» прошла без проблем и оставила только хорошие воспоминания, соблюдайте эти несложные правила:</Text>
+					<br/>
+					<Text weight="bold">1. Не выбегайте на проезжую часть. Вся игра проходит на территории студенческого городка, а именно в квадрате, окруженном улицами – проспектом Ленина, ул. Агеева, ул. Фридриха Энгельса, ул. Мира.</Text>
 
-<Text weight="semibold">1. Не выбегайте на проезжую часть. Вся игра проходит на территории студенческого городка, а именно в квадрате, окруженном улицами – проспектом Ленина, ул. Агеева, ул. Фридриха Энгельса, ул. Мира.</Text>
-
-<Text weight="bold">В противном случае вы автоматически выбываете из игры и получаете дисциплинарное взыскание по университету.</Text>
-
-<Text weight="semibold">2. Не ругайтесь матом и не употребляйте в своей речи нецензурные выражения.</Text>
-
-<Text weight="semibold">3. Не употребляйте спиртные напитки. На нашем мероприятии сухой закон.</Text>
-
-<Text weight="semibold">4. Не курите во время игры, не ставьте кальяны и не пользуйтесь системой IQOS и вейпами.</Text>
-
-<Text weight="semibold">В случае любых проблем Вы можете нажать на иконку огонька в приложении или позвонить главному организатору Анастасии Артемовой. Её номер вы найдете на бейджах организаторов.</Text>
+					<Text weight="semibold">В противном случае вы автоматически выбываете из игры и получаете дисциплинарное взыскание по решению Университета.</Text>
+					<br/>
+					<Text weight="bold">2. Не ругайтесь матом и не употребляйте в своей речи нецензурные выражения.</Text>
+					<br/>
+					<Text weight="bold">3. Во время игры строго запрещено распивать спиртные напитки.</Text>
+					<br/>
+					<Text weight="bold">4. Не курите во время игры. Под запретом также находятся кальяны, система IQOS и вейпы.</Text>
+					<br/><br/>
+					<Text weight="bold">В случае любых проблем вы можете нажать на иконку огонька в приложении или позвонить главному организатору Анастасии Артемовой. Ее номер вы найдете на бейджах организаторов или на выданной вам карте.</Text>
+        		</div>
 				</FormItem> }
 				{selectedTab == 'start' && <FormItem>
 				
@@ -356,12 +376,6 @@ const Home = inject('store')(observer(({ id, store }) => {
 				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}><Icon24Cancel /></PanelHeaderButton>}
 				</Fragment>
 			  )}
-			  right={(
-				<Fragment>
-				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={setActiveModal.bind(this, 'rateTeam2')}><Icon24Done /></PanelHeaderButton>}
-				  {platform === IOS && <PanelHeaderButton onClick={setActiveModal.bind(this, 'rateTeam2')}>Готово</PanelHeaderButton>}
-				</Fragment>
-			  )}
 		  >
 			Следующая точка
 		  </ModalPageHeader>} >
@@ -372,19 +386,14 @@ const Home = inject('store')(observer(({ id, store }) => {
 				<Div style={{background: "white", padding: '10px', margin: '0 auto', borderRadius: "6px", textAlign: 'center'}} >
 					{ store.hashNextPoint && <QRCode value={store.hashNextPoint} size={250}/> }
 				</Div>
+				<Caption style={{textAlign: 'center	'}} widht="semibold" level="2" caps>Нажимайте "Далее" в том случае, если команда получила новую загадку и вы убелись в этом</Caption>
+				<Button size="m" stretched onClick={confirmCloseQr}>Далее</Button>
 			</Div>
 		</ModalPage>
 		<ModalPage
 		id="rateTeam2"
 		settlingHeight={100}
-		onClose={setActiveModal.bind(this, null)}
-		header={<ModalPageHeader
-			left={(
-				<Fragment>
-				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}><Icon24Cancel /></PanelHeaderButton>}
-				</Fragment>
-			  )}
-		  >
+		header={<ModalPageHeader>
 			{rateTeam?.name}
 		  </ModalPageHeader>} >
 			<Div style={{display: 'flex', justifyContent: "center", flexDirection: 'column', height: "100%"}}>
@@ -398,7 +407,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 						<Input name="comment" onChange={onChangeComment}/>
             		</FormItem>
 					<FormItem>
-						<Button size="l" stretched onClick={sendRate}>Оценить</Button>
+						<Button size="l" stretched onClick={rate == -1 ? null : sendRate} disabled={rate == -1}>Оценить</Button>
 					</FormItem>
 				</FormLayout>
 			</Div>
@@ -474,7 +483,20 @@ const Home = inject('store')(observer(({ id, store }) => {
 				
 			</Div>}
 			{activeTabPoint === 'waste' && <Div>
-				<Text>Здесь будут подсказки по развлекательной части точки</Text>
+			<Header mode="primary" multiline>{store.appUser?.point?.microTask?.title}</Header>
+				<Text>{store.appUser?.point?.microTask?.description}</Text>
+				<Header mode="primary">Материалы</Header>
+				{store.appUser?.point?.microTask?.material ? <List>
+					{store.appUser?.point?.task?.description.material.map(material => 
+						<Group header={<Header mode="secondary">{material.title}</Header>}>
+							{Array.isArray(material.description) ? <List>
+								{material.description.map(mat => <Text>{mat}</Text>)}
+							</List> : material.description}
+						</Group>
+					)}
+					</List> : <Placeholder icon={<Icon28GhostSimleOutline width={70} height={70}/>}>
+						Материалов для занималок нет
+						</Placeholder>}
 				</Div>}
 			{activeTabPoint === 'task' && <Div>
 				<Header mode="primary" multiline>{store.appUser?.point?.task?.pointTaskTitle}</Header>
@@ -543,7 +565,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 			// С КОМАНДОЙ
 			<>
 
-			{ store.appUser.team && !store.appUser?.team.startAt && store.appUser.role < 2 && <Group header={<Header mode="secondary">Ваша тропа</Header>}>
+			{ store.appUser.team && !store.appUser?.team.startAt && store.appUser.role < 2 && store.appUser.team.stage < 20 && <Group header={<Header mode="secondary">Ваша тропа</Header>}>
 						{store.teamContest && <RichCell
 						key={store.teamContest._id}
 						before={<Avatar src={getIcon(store.teamContest.institute)} mode="app"/>}
@@ -588,13 +610,14 @@ const Home = inject('store')(observer(({ id, store }) => {
 			</TaskCard>
 			</div>}
 
-			{store.appUser.team && store.appUser?.team.stage == 21 && <div>
-				<Logo/>
-				<div>
-					Ваш забег завершён! Спасибо за участие! Ожидайте подведения итогов
-				</div>
-				<div>
-					Ваше время: {timeFormat('hh ч. mm мин. ss с.', timeToDate(store.appUser.team?.finishAt, store.appUser.team?.startAt))}
+			{store.appUser.team && store.appUser?.team.stage == 21 && <div style={{display: 'flex', alignItems: 'center', flexDirection: 'column'}}>
+				<LazyLoadImage
+				 src={final}
+				 placeholder={<span>Загружается...</span>}
+				/>
+				<div style={{marginTop: 20, textAlign: 'center'}}>
+					<Title level={2} weight="semibold" style={{fontSize: '24px'}}>Поздравляем! Вы прошли свою «Тропу Первака»!</Title>
+					<Title level={3} weight="semibold" multiline>Ожидайте результатов забега в нашей группе ВКонтакте и в мини-приложении на вкладке «Забеги»</Title>
 				</div>
 			</div>}
 
@@ -619,9 +642,9 @@ const Home = inject('store')(observer(({ id, store }) => {
 					return (<RichCell
 				key={team._id}
 				before={<TeamAvatar team={team}/>}
-				text={team.stage ? `Точка ${team.stage}` : `Стартуют в ${dayjs(new Date(team.startTime)).locale('ru').format('HH:mm')}`}
+				text={team.stage ? team.stage == 20 ? "Бегут на финиш" : team.stage == 21 ? "Финишировали" : `Точка ${team.stage}` : `Стартуют в ${dayjs(new Date(team.startTime)).locale('ru').format('HH:mm')}`}
 				after={rate + ' ' + declOfNum(rate , ['балл', 'балла', 'баллов'])}
-				caption={team.substage ? 'на точке' : 'решают загадку'}>
+				caption={team.substage ? 'на точке' : team.stage ? 'решают загадку' : ''}>
 					{team.name}
 				</RichCell>)})
 				}
@@ -635,13 +658,22 @@ const Home = inject('store')(observer(({ id, store }) => {
 					</Cell>
 				{
 				store.orgTeams.map(team => {
-					const leftTeam = team.rates.filter(rate => rate.org == store.appUser._id)
+					const ratesOnPoint = team.rates.filter(rate => rate.point == store.appUser.point.title)
 					let index = (store.appUser.point?.num - 1) * 2
+					const teamOnPoint = team.stage == store.appUser.point?.num
+					const teamBefore = team.stage < store.appUser.point?.num
+					const solveTask = team.substage == 0
+					const right = teamBefore ? null : 
+					(teamOnPoint ? solveTask ? ('решают загадку') : (ratesOnPoint.length ? <Counter mode={isShow ? 'prominent' : 'primary'}>{isShow ? ratesOnPoint[0].rate  : '-' }</Counter> : <Icon16Chevron style={{color: '#4BB34B'}}/>) : 
+					(ratesOnPoint.length ? <Counter mode={isShow ? 'prominent' : 'primary'}>{isShow ? ratesOnPoint[0].rate  : '-' }</Counter> : <Icon16Chevron style={{color: '#4BB34B'}}/>))
+					const click = teamBefore ? null : 
+					(teamOnPoint ? solveTask ? null : (ratesOnPoint.length ? () => {setActiveModal('editRate'); setRateTeam(team); setIdRate(ratesOnPoint[0])} : () => { setActiveModal('rateTeam1'); setRateTeam(team)}) : 
+					(ratesOnPoint.length ? () => {setActiveModal('editRate'); setRateTeam(team); setIdRate(ratesOnPoint[0])} : () => { setActiveModal('rateTeam2'); setRateTeam(team)}))
 					return (<RichCell
-						onClick={team.stage >= store.appUser.point?.num || (team.substage && team.stage == store.appUser.point?.num) ? leftTeam.length ? () => {setActiveModal('editRate'); setRateTeam(team); setIdRate(leftTeam[0])} : (team.substage && team.stage == store.appUser.point?.num) ? () => { setActiveModal('rateTeam1'); setRateTeam(team)} : null : null}
+						onClick={click}
 						caption={`${institute[team.institute]}, гр.${team.group} ${team.timings[index] && team.stage == store.appUser.point?.num ? `, на задании точки с ${new Date(team.timings[index]).getHours()}:${new Date(team.timings[index]).getMinutes()}` : ''}`}
 						before={<TeamAvatar team={team}/>}
-						after={team.stage >= store.appUser.point?.num ? leftTeam.length ? <Counter mode={isShow ? 'prominent' : 'primary'}>{isShow ? leftTeam[0].rate  : '-' }</Counter> : store.appUser.point.num != team.stage ? <><Icon16Chevron style={{color: '#4BB34B'}}/></> : team.substage ? <Icon16Chevron style={{color: '#4BB34B'}}/> : 'решают загадку' : null}>
+						after={right}>
 						{team.name}
 					</RichCell>)
 					})
@@ -650,7 +682,6 @@ const Home = inject('store')(observer(({ id, store }) => {
 				</Group>
 				</>
 			}
-		
 		{store.homeSnackbar}
 		{snackbar}
 	</Panel>

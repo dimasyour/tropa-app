@@ -39,7 +39,6 @@ class MainStore{
             teamStartTime: computed,
 
             setAppUser: action,
-            setStartPosition: action,
             setOrgTeams: action,
             setStatusApp: action,
             goPage: action,
@@ -84,6 +83,7 @@ class MainStore{
               this.setSocketStatus(<Status mode='success'>На связи</Status>)
 		})
 
+        this.socket.on('team:new_task', data => this.setCurrentTask(data.task))
 		this.socket.on('disconnect', (reason) =>{
             this.setSocketStatus(<Status mode='danger'>Потеря соединения</Status>)
 			const reason_codes = [
@@ -105,7 +105,6 @@ class MainStore{
         this.socket.on('team:update_team', data => {
             this.getAppUser()
         })
-        this.socket.on('team:new_task', data => this.setCurrentTask(data.task))
         this.socket.on('user:get_task', data => this.setCurrentTask(data.task))
         this.socket.on('connect_error', () => {
             this.setSocketStatus(<Status mode='danger'>Ошибка подключения</Status>)
@@ -119,7 +118,7 @@ class MainStore{
     
     updateTeammates = () => {
         this?.appUser?.team ? 
-		bridge.send("VKWebAppCallAPIMethod", {"method": "users.get", "params": {"user_ids": this.appUser.team.mates.map(mate => mate.uid).filter(mate => mate.uid != this.vk_u.id).join(','), "v":"5.131", "access_token": access_token, "fields": "photo_200"}}).then(data => {
+		bridge.send("VKWebAppCallAPIMethod", {"method": "users.get", "params": {"user_ids": this.appUser.team.mates.map(mate => mate.uid).filter(mate => mate.uid != this.vk_u.id).join(','), "v":"5.131", "access_token": access_token, "fields": "photo_200,sex"}}).then(data => {
             this.vk_mates = data.response
 		}) : []
     }
@@ -128,14 +127,6 @@ class MainStore{
         axios.get(serverURL + 'points').then(data => {
             this.cycle = data.data.points
         })
-    }
-    setStartPosition = () => {
-        axios.get(serverURL + 'teams/startPos', { params: {
-            id: this.appUser.team._id,
-            institutes  : this.teamContest.institute.join('')
-        }}).then((data => {
-            this.startPosition = data.data.position
-        }))
     }
     setCurrentTask = task => this.currentTask = task
     setSocketStatus = status => this.socketStatus = status
@@ -226,6 +217,5 @@ autorun(() => {
             }
         }
     }
-    mainStore.setStartPosition()
 })
 export default makeInspectable(mainStore)

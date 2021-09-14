@@ -137,11 +137,11 @@ const App = ({ platform }) => {
 								text="Информация"
 								><Icon28InfoCircleOutline/></TabbarItem>
 								}
-								{ (store.appUser.role > 3 || true) && <TabbarItem
+								{ (store.appUser.role > 3) && <TabbarItem
 								onClick={onStoryChange}
 								selected={store.activePage === 'admin'}
 								data-story="admin"
-								text="Админка">
+								text={store.appUser.role == 4 ? 'Модер' : 'Админка'}>
 									<Icon24RobotOutline/>
 									</TabbarItem>}
 								
@@ -154,9 +154,8 @@ const App = ({ platform }) => {
 							<View id="start" activePanel="start">
 								<Start id='start' theme={theme}/>
 							</View>
-							<View id="reg" activePanel="reg">
+							
 								<RegTeam id='reg'/>
-							</View>
 							
 								
 							
