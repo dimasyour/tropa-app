@@ -2,7 +2,7 @@ import React, { useEffect, useState, Fragment } from 'react';
 import { inject, observer } from 'mobx-react'
 import { Panel, PanelHeader, Group, Header, SimpleCell, CellButton, ModalRoot, ModalPage, Input, List, Alert, FormLayout, FormItem, View, ModalPageHeader, PanelHeaderButton, usePlatform, ANDROID, VKCOM, IOS, Cell, Avatar, Gradient, Title, InfoRow, RichCell, SelectMimicry, Radio, FormLayoutGroup, Separator, Footer } from '@vkontakte/vkui';
 import { Icon16StarCircle, Icon24ScanViewfinderOutline } from '@vkontakte/icons';
-import { Icon28ChevronDownOutline, Icon24Cancel, Icon24Done, Icon24UserAdded, Icon28User, Icon28Search, Icon20CheckCircleFillGreen, Icon20CancelCircleFillRed } from '@vkontakte/icons';
+import { Icon28ChevronDownOutline, Icon24Cancel, Icon24Done, Icon24UserAdded, Icon28User, Icon28Search, Icon20CheckCircleFillGreen, Icon20CancelCircleFillRed, Icon28ChecksOutline } from '@vkontakte/icons';
 import { Snackbar } from '@vkontakte/vkui'
 import { Icon16Done, Icon16ErrorCircle} from '@vkontakte/icons'
 import { Icon24BrowserBack } from '@vkontakte/icons';
@@ -12,9 +12,10 @@ import { serverURL, access_token } from '../config';
 import bridge from '@vkontakte/vk-bridge'
 import { getTime, timeToDate, timeFormat, declOfNum, getDate } from '../utils/func';
 import TeamAvatar from './components/TeamAvatar';
+import CustomPopout from './components/CustomPopout';
 
 const AdminMenu = inject('store')(observer(({ id, store }) => {
-    const platform = usePlatform('')
+    const platform = usePlatform()
     const [searchInput, setSearchInput] = useState('')
     const [activeModal, setActiveModal] = useState(null)
     const [usersFound, setUsersFound] = useState([])
@@ -27,7 +28,6 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
     const [orgAvatars, setOrgAvatars] = useState([])
 
 
-
     useEffect(() => {
         if(activeModal == 'selectPoint'){
             store.getCycle()
@@ -38,25 +38,50 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
     },[activeModal])
 
     const readQR = () => {
-		bridge.send("VKWebAppOpenCodeReader").then(res => {
-			const { code_data } = res
-            const [ action, team ] = code_data.split('|')
-            if(action == 'start'){
-                store.socket.emit('team:ready_start', {teamId: team})
-                setSnackbar(snackbarOk('Команда теперь может начать забег. Проверь это на их экране'))
-            } else if(action == 'finish'){
-                store.socket.emit('team:finish_team', {teamId: team})
-                setSnackbar(snackbarOk('Забег команды завершён. Проверь это на их экране'))
-            } else {
-                setSnackbar(snackbarErr('QR не подходит'))
-            }
-		}).catch(err => {
-			if(err.error_type == "client_error"){
-				setSnackbar(snackbarErr(err.error_data.error_reason))
-			} else {
-                setSnackbar(snackbarErr(err.message))
-            }
-		})
+        if(platform == ANDROID) {
+			bridge.send("VKWebAppOpenCodeReader").then(res => {
+                const { code_data } = res
+                const [ action, team ] = code_data.split('|')
+                if(action == 'start'){
+                    store.socket.emit('team:ready_start', {teamId: team})
+                    setSnackbar(snackbarOk('Команда теперь может начать забег. Проверь это на их экране'))
+                } else if(action == 'finish'){
+                    store.socket.emit('team:finish_team', {teamId: team})
+                    setSnackbar(snackbarOk('Забег команды завершён. Проверь это на их экране'))
+                } else {
+                    setSnackbar(snackbarErr('QR не подходит'))
+                }
+            }).catch(err => {
+                if(err.error_type == "client_error"){
+                    setSnackbar(snackbarErr(err.error_data.error_reason))
+                } else {
+                    setSnackbar(snackbarErr(err.message))
+                }
+            })
+		} else {
+			const onScan = res => {
+				if(res){
+                    const [ action, team ] = res.split('|')
+					setPopout(null)
+					if(action == 'start'){
+                        store.socket.emit('team:ready_start', {teamId: team})
+                        setSnackbar(snackbarOk('Команда теперь может начать забег. Проверь это на их экране'))
+                    } else if(action == 'finish'){
+                        store.socket.emit('team:finish_team', {teamId: team})
+                        setSnackbar(snackbarOk('Забег команды завершён. Проверь это на их экране'))
+                    } else {
+                        setSnackbar(snackbarErr('QR не подходит'))
+                    }
+				}
+			}
+			const onError = res => {
+				if(res){
+					setPopout(null)
+					snackbarErr(res)
+				}
+			}
+			setPopout(<CustomPopout onScan={onScan} onError={onError} onClose={setPopout.bind(this, null)}/>)
+		}
 	}
 
     
@@ -137,7 +162,7 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
     const handleSelectTeam = team => {
         let ids = team.mates.map(mate => mate.uid)
         bridge.send("VKWebAppCallAPIMethod", {"method": "users.get", "params": {"user_ids": ids.join(','), "v":"5.131", "access_token": access_token, "fields": "photo_200"}}).then(data => {
-                let mates = team.mates.map((user, index) => {user.photo = data.response[index].photo_200; return user})
+                let mates = team.mates.map((user, index) => {user.photo = data.response[index].photo_200; user.vkUser = `${data.response[index].first_name} ${data.response[index].last_name}`; return user})
                 setSelectedTeam({ ...selectedTeam, ...team, mates: mates})
             })
     }
@@ -435,11 +460,11 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
            <FormLayoutGroup>
                {store.contestList.map(contest => (
                    <RichCell
-                   onClick={alertActivateContest.bind(this, contest)}
+                   onClick={contest.status != 2 ? alertActivateContest.bind(this, contest) : null}
                    key={contest._id}
                    text={contest.institute}
                    caption={getDate(contest.date)}
-                   after={contest.status ? <Icon20CheckCircleFillGreen/> : <Icon20CancelCircleFillRed/>}
+                   after={contest.status ? contest.status == 2 ? <Icon28ChecksOutline/> : <Icon20CheckCircleFillGreen/> : <Icon20CancelCircleFillRed/>}
                    >{contest.name}</RichCell>
                ))}
            </FormLayoutGroup>

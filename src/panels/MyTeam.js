@@ -141,6 +141,7 @@ const MyTeam = inject('store')(observer(({ id, store }) => {
                 {err.response?.data.text ?? 'Ошибка запроса'}
               </Snackbar>)
         })
+        setNewName('')
     }
     const onChangeValue = (e) => {
         setNewName(e.target.value)
@@ -238,9 +239,9 @@ const MyTeam = inject('store')(observer(({ id, store }) => {
                 </HorizontalScroll>
             </Group> */}
             
-            {store.activeContest?.institute != store.appUser.team.institute && store.appUser.role == 1 &&  store.appUser.team.status < 2 && <Group header={<Header mode="secondary">Основная информация</Header>}>
+            {store.activeContest?.institute != store.appUser.team.institute && store.appUser.role == 1 &&  store.appUser.team.status < 3 && <Group header={<Header mode="secondary">Основная информация</Header>}>
                 <FormLayout>
-                    {store.appUser.team.status == 1 && <FormItem>
+                    {store.appUser.team.status == 2 && <FormItem>
                         <Text weight="regular">Изменение названия команды будет доступно до одобрения заявки</Text>
                     </FormItem>}
                     {store.appUser.team.status == 0 && <FormItem>

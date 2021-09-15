@@ -9,6 +9,9 @@ body[scheme="bright_light"]{
     --task_card_background: #fff;
     --placeholder_background: #f6f7f8;
     --placeholder_animation: linear-gradient(to right, #eee 2%, #ddd 18%, #eee 33%);
+    --animate_1: rgba(0,0,0,.3);
+    --animate_2: rgba(0,0,0,0);
+    --animate_color: white;
 }
 body[scheme="space_gray"]{
     --button_outline_border: #E1E3E6;
@@ -16,6 +19,10 @@ body[scheme="space_gray"]{
     --task_card_background: #2C2D2E;
     --placeholder_animation: linear-gradient(to right, #232324 2%, #363738 18%, #232324 33%); 
     --placeholder_background: #1b1c1d;
+    --animate_1: #4d4d50;
+    --animate_2: #19191a;
+    --animate_color: white;
+    
 }
 .vkuiAvatar__children{
     color: white;

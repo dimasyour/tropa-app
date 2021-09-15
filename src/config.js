@@ -1,7 +1,7 @@
 module.exports = {
     serverURL: 'https://leton.cc/',
     version: 'v0.3.1',
-    access_token: "d4d52c74d4d52c74d4d52c747dd4ada065dd4d5d4d52c74b43c904aebe963c23ef9149e",
-    service_key: "d4d52c74d4d52c74d4d52c747dd4ada065dd4d5d4d52c74b43c904aebe963c23ef9149e",
-    app_id: 7900177
+    access_token: "bd6ae915bd6ae915bd6ae915fabd13ba1abbd6abd6ae915dc2a958dd677df3686cf3d61",
+    service_key: "bd6ae915bd6ae915bd6ae915fabd13ba1abbd6abd6ae915dc2a958dd677df3686cf3d61",
+    app_id: 7951119
 }

@@ -6,16 +6,11 @@ import { Icon16ErrorCircleOutline } from '@vkontakte/icons';
 import { Icon16Done, Icon16ErrorCircle,Icon20InfoCircleOutline, Icon24Cancel, Icon24Done,Icon20FireCircleFillRed, Icon24BrainOutline, Icon24ScanViewfinderOutline, Icon28Flash, Icon16Chevron, Icon28Notifications, Icon28RefreshOutline, } from '@vkontakte/icons';
 import { Icon12OnlineVkmobile } from '@vkontakte/icons';
 
-import Logo from '../icons/Logo'
 import 'dayjs/locale/ru'
-import Way from './Way';
-import Labirint from '../icons/Labirint'
 import TaskCard from './components/TaskCard'
 import QRCode from 'react-qr-code'
 import CustomPopout from './components/CustomPopout';
-import QrReader from 'react-qr-reader'
 import bridge from '@vkontakte/vk-bridge'
-import axios from 'axios';
 import final from '../img/final.png';
 
 import TeamAvatar from './components/TeamAvatar';
@@ -23,7 +18,6 @@ import { Icon28GhostSimleOutline } from '@vkontakte/icons';
 import { service_key } from '../config';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru'
-import ReactPlayer from 'react-player';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 
 const Home = inject('store')(observer(({ id, store }) => {
@@ -191,6 +185,8 @@ const Home = inject('store')(observer(({ id, store }) => {
 			org: store.appUser._id
 		})
 		setSnackbar(snackbarOk('Оценка выставлена'))
+		setRate(-1)
+		setComment('')
 	}
 	const editRate = () => {
 		setActiveModal(null)
@@ -200,6 +196,8 @@ const Home = inject('store')(observer(({ id, store }) => {
 			id: idRateRef.current._id,
 		})
 		snackbarOk('Оценка успешно изменена')
+		setRate(-1)
+		setComment('')
 	}
 	const onChangeComment = e => {
 		setComment(e.target.value)
@@ -555,7 +553,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 
 			<Cell
 				before={store.vk_u.photo_200 ? <Avatar src={store.vk_u.photo_200}/> : null}
-				description={store.userRole}
+				description={<div>{store.userRole}</div>}
 			>
 				{`${store.vk_u.first_name} ${store.vk_u.last_name}`}
 			</Cell>

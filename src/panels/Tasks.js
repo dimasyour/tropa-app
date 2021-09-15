@@ -2,8 +2,8 @@ import React, {useEffect, useState, useLayoutEffect, useMemo } from 'react';
 import { inject, observer } from 'mobx-react'
 import axios from 'axios';
 
-import { Panel, PanelHeader, PanelHeaderClose, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, ViewWidth, RichCell, View, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, Header, SimpleCell, Cell, Avatar, InfoRow } from '@vkontakte/vkui';
-import { Icon28ChevronBack, Icon24Back, Icon24Dismiss } from '@vkontakte/icons'
+import { Panel, PanelHeader, PanelHeaderClose, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, ViewWidth, RichCell, View, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, Header, SimpleCell, Cell, MiniInfoCell, InfoRow } from '@vkontakte/vkui';
+import { Icon28ChevronBack, Icon24Back, Icon24Dismiss, Icon20ArticleBoxOutline } from '@vkontakte/icons'
 import { serverURL } from '../config';
 import { timeFormat, timeToDate } from '../utils/func'
 import TeamAvatar from './components/TeamAvatar';
@@ -59,10 +59,22 @@ const Tasks = inject('store')(observer(({ id, store }) => {
 					</InfoRow>
 				</SimpleCell>
 				<SimpleCell>
-					<InfoRow header="Задание">
+					<InfoRow header="Загадка">
 						{activeModal.point?.task.title}
 					</InfoRow>
 				</SimpleCell>
+				<SimpleCell>
+					<InfoRow header="Задание">
+					{activeModal.point?.task.pointTaskTitle}
+					</InfoRow>
+				</SimpleCell>
+				<MiniInfoCell
+					before={<Icon20ArticleBoxOutline />}
+					textWrap="full"
+					textLevel="primary"
+					>
+					{activeModal.point?.task.description.task}
+					</MiniInfoCell>
 				{store.activeContest && <>
 				<Header mode="secondary">Команды на точке</Header>
 					{getTeamsOnPoint(activeModal.point?.num).map(team => {

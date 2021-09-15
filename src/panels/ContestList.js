@@ -4,9 +4,9 @@ import { getDate, getIcon } from '../utils/func'
 import { Icon36Users3Outline, Icon28CalendarOutline, Icon24ClockOutline, Icon16ChevronOutline, Icon24Cancel } from '@vkontakte/icons';
 
 import Labirint from '../icons/Labirint'
-import { ReactComponent as Gold } from '../icons/gold.svg'
-import { ReactComponent as Silver } from '../icons/silver.svg'
-import { ReactComponent as Bronze } from '../icons/bronze.svg'
+import Gold from '../icons/Gold'
+import Silver from '../icons/Silver'
+import Bronze from '../icons/Bronze'
 
 
 import { View, Panel, Avatar, PanelHeader, PanelHeaderButton, ModalPageHeader, RichCell, List, Tabs, TabsItem, Group, Div, Placeholder, ModalRoot, ModalPage, usePlatform, VKCOM, ANDROID, IOS } from '@vkontakte/vkui';
@@ -19,7 +19,7 @@ const ContestList = inject('store')(observer(({ id, store }) => {
 	const lastContest = store.contestList.filter(contest => contest.status == 2)
 	const futureContest = store.contestList.filter(contest => contest.status == 0)
 
-	
+	const institute = ['', 'ИВТС', 'ИПМКН', 'ИГДИС', 'ИЕН', 'ИПФКСиТ', 'ПТИ', 'ИПУ', 'ИГСН', 'МИ']
 	
 	const modalRoot = (<ModalRoot activeModal={activeModal}>
 		<ModalPage id='result' 
@@ -36,28 +36,25 @@ const ContestList = inject('store')(observer(({ id, store }) => {
 		  >
 			{selectedContest?.name}
 		  </ModalPageHeader>} >
-			  {selectedContest.results ? <List>
-					<div style={{ display: 'flex'}}>
-						<Gold style={{height: 120, flex: '2'}}/>
-						<div style={{flex: 8}}>
-							<div style={{margin: '10px 0', padding: '10px', background: '#FEEA97', fontWeight: 800, color: 'black', borderTopLeftRadius: '6px'}}>Победители забега</div>
-							<div style={{fontWeight: 800, fontSize: 40}}>{selectedContest.results[0]?.name}</div>
-						</div>
-					</div>
-					<div style={{ display: 'flex'}}>
-						<Silver style={{height: 120, flex: '2'}}/>
-						<div style={{flex: 8}}>
-							<div style={{margin: '10px 0', padding: '10px', background: '#E3E3E3', fontWeight: 800, color: 'black', borderTopLeftRadius: '6px'}}>2-ое место</div>
-							<div style={{fontWeight: 800, fontSize: 40}}>{selectedContest.results[1]?.name}</div>				
-						</div>
-					</div>
-					<div style={{ display: 'flex'}}>
-						<Bronze style={{height: 120, flex: '2'}}/>
-						<div style={{flex: 8}}>
-							<div style={{margin: '10px 0', padding: '10px', background: '#FFB973', fontWeight: 800, borderTopLeftRadius: '6px'}}>3-ое место</div>
-							<div style={{fontWeight: 800, fontSize: 40}}>{selectedContest.results[2]?.name}</div>
-						</div>
-					</div>
+			  {selectedContest.results ? <List style={{paddingBottom: 32}}>
+				  <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+				  		<Gold/>
+					  	<div style={{padding: '5px 20px', fontWeight: 'bold', backgroundColor: '#FEEA97', fontSize: 24, borderRadius: 20, color: 'black'}}>Победители забега</div>
+					  	<div style={{padding: '5px 20px',  fontSize: 20}}>«{selectedContest.results[0].name}»</div>
+						  <div style={{fontSize: 14, color: 'var(--text_secondary)'}}>{institute[selectedContest.results[0].institute]}</div>
+				  </div>
+				  <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 24}}>
+				  		<Silver/>
+					  	<div style={{padding: '5px 20px', fontWeight: 'bold', backgroundColor: '#E3E3E3', fontSize: 20, borderRadius: 20, color: 'black'}}>2-ое место</div>
+					  	<div style={{padding: '5px 20px',  fontSize: 18}}>«{selectedContest.results[1].name}»</div>
+						  <div style={{fontSize: 12, color: 'var(--text_secondary)'}}>{institute[selectedContest.results[1].institute]}</div>
+				  </div>
+				  <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 24}}>
+				  		<Bronze/>
+					  	<div style={{padding: '5px 20px', fontWeight: 'bold', backgroundColor: '#FFB973', fontSize: 20, borderRadius: 20, color: 'black'}}>3-е место</div>
+					  	<div style={{padding: '5px 20px',  fontSize: 18}}>«{selectedContest.results[2].name}»</div>
+						  <div style={{fontSize: 12, color: 'var(--text_secondary)'}}>{institute[selectedContest.results[2].institute]}</div>
+				  </div>
 				</List> :
 				<Placeholder
 				icon={<Icon24ClockOutline width={70} height={70} />}>
@@ -114,8 +111,8 @@ const ContestList = inject('store')(observer(({ id, store }) => {
 							key={contest._id}
 							before={<Avatar src={getIcon(contest.institute)} mode="app"/>}
 							caption={getDate(contest.date)}
-							after={<Icon16ChevronOutline width={24} height={24}/>}
-							onClick={() => { setSelectedContest(contest); setActiveModal('result');}}>
+							after={contest.results.length ? <Icon16ChevronOutline width={24} height={24}/> : 'подведение итогов'}
+							onClick={ contest.results.length ? () => { setSelectedContest(contest); setActiveModal('result');} : null}>
 								{contest.name} {store.appUser.team ? store.teamContest._id == contest._id ? <Icon36Users3Outline width={20} height={20} style={{display: 'inline-block'}}/> : null : null}
 							</RichCell>
 						)) : 
