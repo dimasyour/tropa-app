@@ -3,7 +3,7 @@ import React, { useState, useEffect, Fragment, useCallback } from 'react';
 import bridge from '@vkontakte/vk-bridge';
 import { inject, observer } from 'mobx-react'
 
-import { Panel, PanelHeader, FormLayout, Group, Button, FormItem, Input, PanelHeaderBack, HorizontalScroll, HorizontalCell, Avatar, usePlatform, List, FormStatus, ANDROID, View, ModalRoot, ModalPage, ModalPageHeader, PanelHeaderButton, VKCOM, IOS, Cell,  } from '@vkontakte/vkui';
+import { Panel, PanelHeader, FormLayout, Group, Button, FormItem, Input, PanelHeaderBack, HorizontalScroll, HorizontalCell, Avatar, usePlatform, List, FormStatus, ANDROID, View, ModalRoot, ModalPage, ModalPageHeader, PanelHeaderButton, VKCOM, IOS, Cell, SelectMimicry,FormLayoutGroup, Radio} from '@vkontakte/vkui';
 import { Icon20Users, Icon24Done, Icon24Cancel } from '@vkontakte/icons'
 import axios from 'axios';
 import { serverURL, service_key, app_id } from '../config';
@@ -17,9 +17,11 @@ const RegTeam = inject('store')(observer(({ id, store }) => {
     const [ friends, setFriends] = useState([])
     const [ selected, setSelected] = useState([])
 
+    const [ selectedInst, setSelectedInst ] = useState(null)
     const [ status, setStatus ] = useState(null)
     
     const platform = usePlatform()
+
 
     const onChangeName = e => {
         setNameTeam(e.target.value)
@@ -59,8 +61,9 @@ const RegTeam = inject('store')(observer(({ id, store }) => {
             params: {
                 mates: mates.map(mate => mate.id).join(','),
                 name: nameTeam,
-                group: num,
-                leader: store.vk_u.id
+                leader: store.vk_u.id,
+                gen: true,
+                institute: selectedInst.value
             }
         }).then((data) => {
             if(data){
@@ -138,12 +141,19 @@ const RegTeam = inject('store')(observer(({ id, store }) => {
             {friends.map(friend => <Cell key={friend.id} selectable onChange={() => handleSelectFriend(friend)} before={<Avatar src={friend.photo_200} />}>{friend.first_name} {friend.last_name}</Cell>)}
             </List>
         </ModalPage>
+        <ModalPage id="selectInst"
+        settlingHeight={100}
+        onClose={setActiveModal.bind(this, null)}>
+            <FormLayoutGroup top="Выберите точку">
+                {['ИВТС', 'ИПМКН', 'ИГДИС', 'ИЕН', 'ИПФКСиТ', 'ПТИ', 'ИПУ', 'ИГСН', 'МИ'].map((inst, index) => (<Radio name="point" onClick={() => {setSelectedInst({text: inst, value: index+1}); setActiveModal(null)}} value={index + 1}>{inst}</Radio>))}
+            </FormLayoutGroup>
+        </ModalPage>
     </ModalRoot>
     return (
-        <View id="reg" activePanel="reg" modal={modalRoot}>
+        <View id="regGen" activePanel="regGen" modal={modalRoot}>
             <Panel id={id}>
                 <PanelHeader left={<PanelHeaderBack onClick={() => window.history.back()}></PanelHeaderBack>}>
-                    Регистрация команды
+                    Забег поколений
                 </PanelHeader>
                 <Group>
                     <FormLayout>
@@ -163,14 +173,9 @@ const RegTeam = inject('store')(observer(({ id, store }) => {
                             />
                         </FormItem>
                         <FormItem
-                        top="Номер группы"
+                        top="Институт"
                         >
-                            <Input 
-                            type="num"
-                            name="num"
-                            value={num}
-                            onChange={onChangeNum}
-                            />
+                            <SelectMimicry onClick={() => setActiveModal('selectInst')} placeholder={selectedInst?.text ?? "Выберите институт"}/>
                         </FormItem>
                         <FormItem top={<>Члены команды <Button style={{marginLeft: 8}} size="s" mode="outline" onClick={ platform == ANDROID ? selectFriends : setActiveModal.bind(this, 'selectFriends')} before={<Icon20Users/>}>Выбрать</Button></>}/>
                         <Group>
@@ -184,7 +189,7 @@ const RegTeam = inject('store')(observer(({ id, store }) => {
                             </HorizontalScroll>
                         </Group>
                         <FormItem>
-                            <Button size="l" stretched onClick={createTeam} disabled={registered}>Подать заявку</Button>
+                            <Button size="l" stretched onClick={createTeam} disabled={registered || !selectedInst}>Подать заявку</Button>
                         </FormItem>
                     </FormLayout>
                 </Group>

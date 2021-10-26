@@ -85,18 +85,24 @@ class MainStore{
 
         this.socket.on('team:new_task', data => this.setCurrentTask(data.task))
 		this.socket.on('disconnect', (reason) =>{
-            this.setSocketStatus(<Status mode='danger'>Потеря соединения</Status>)
-			const reason_codes = [
-				{code: 'io server disconnect', reason: 'Отключён сервером'},
-				{code: 'io client disconnect', reason: 'Отключён клиентом'},
-				{code: 'ping timeout', reason: 'Сервер не ответил'},
-				{code: 'transport close', reason: 'Вы потеряли сеть либо изменили тип сети'},
-				{code: 'transport error', reason: 'Сервер не отвечает. Сообщите организаторам'},
-			]
-              this.setSocketStatus(<Status mode='warning'>Переподключаемся</Status>)
-            setTimeout(() => { 
-                this.socket.connect()
-            }, 3000)
+            if(reason == 'io client disconnect'){
+                this.setSocketStatus(<Status mode='warning'>Отключён. Восстанавливаем связь</Status>)
+            } else {
+                this.setSocketStatus(<Status mode='danger'>Потеря соединения</Status>)
+                const reason_codes = [
+                    {code: 'io server disconnect', reason: 'Отключён сервером'},
+                    {code: 'io client disconnect', reason: 'Отключён клиентом'},
+                    {code: 'ping timeout', reason: 'Сервер не ответил'},
+                    {code: 'transport close', reason: 'Вы потеряли сеть либо изменили тип сети'},
+                    {code: 'transport error', reason: 'Сервер не отвечает. Сообщите организаторам'},
+                ]
+                  this.setSocketStatus(<Status mode='warning'>{`Переподключаемся(${reason})`}</Status>)
+                setTimeout(() => { 
+                    this.socket.connect()
+                }, 3000)
+            }
+            
+			
 		})
         this.socket.on('user:update_data', data => this.appUser = data.user)
         this.socket.on('org:update_team', (data) => {
@@ -167,7 +173,7 @@ class MainStore{
     get teamContest(){
         const user = this.appUser
         if(user.team && this.contestList){
-            let a = this.contestList.filter(contest => contest.institute.includes(user.team.institute)).pop() 
+            let a = this.contestList.filter(contest => contest.role.includes(user.team.role[ user.team.role.length - 1 ])).pop() 
             // a.instStr = a.institute.join().replace(',','')
             return a
         } else {
@@ -210,7 +216,7 @@ autorun(() => {
     mainStore.updateTeammates()
     if(mainStore.appUser){
         if(!mainStore.socket){
-            if(mainStore.appUser.team && mainStore.appUser.team.stage != 21 && mainStore.activeContest?.institute.includes(mainStore.appUser.team.institute)){
+            if(mainStore.appUser.team && mainStore.appUser.team.stage != 21 && mainStore.activeContest?.role.includes(mainStore.appUser.team.role[0])){
                 mainStore.createConnection()
             } else if(mainStore.appUser.role > 2){
                 mainStore.createConnection('org')

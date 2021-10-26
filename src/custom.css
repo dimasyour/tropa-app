@@ -27,3 +27,9 @@ body[scheme="space_gray"]{
 .vkuiAvatar__children{
     color: white;
 } 
+.vkuiPopoutWrapper--masked .vkuiPopoutWrapper__overlay{
+    background: rgb(0 0 0);
+}
+.lazy-load-image-background{
+    width: 100%
+}

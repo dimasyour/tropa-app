@@ -5,7 +5,7 @@ import { Icon28AddOutline, Icon16Done } from '@vkontakte/icons';
 import { Icon16ErrorCircle } from '@vkontakte/icons';
 import { Icon20Hand, Icon24Done, Icon24Cancel } from '@vkontakte/icons';
 import axios from 'axios';
-import { serverURL, app_id } from '../config';
+import { serverURL, app_id, service_key } from '../config';
 
 import bridge from '@vkontakte/vk-bridge';
 
@@ -26,7 +26,7 @@ const MyTeam = inject('store')(observer(({ id, store }) => {
     const platform = usePlatform()
     const selectFriends = () => {
         bridge.send("VKWebAppGetFriends", { multi: true }).then(data => {
-            const users = data.users.slice(0, 11 - store.appUser.team.mates.length).map(user => user.id)
+            const users = data.users.slice(0, 15 - store.appUser.team.mates.length).map(user => user.id)
             return users
         }).then(users => {
             axios.get(serverURL + 'teams/update', {
@@ -251,16 +251,16 @@ const MyTeam = inject('store')(observer(({ id, store }) => {
                         <Input type="text" defaultValue={store.appUser.team.name} onChange={onChangeValue}/>
                     </FormItem>
                     { newName != store.appUser.team.name && <FormItem>
-                        <Button stretched onClick={updateNameTeam}>Изменить</Button>
+                        <Button stretched onClick={updateNameTeam} size="m">Изменить</Button>
                     </FormItem>}
                 </FormLayout>
             </Group>}
             <Group header={<Header mode="secondary">Участники</Header>}>
                     <List>
                         {store.vk_mates.map((item) => (
-                        <Cell removable={ item.id != store.appUser.team.leader.uid && store.activeContest?.institute != store.appUser.team.institute && store.appUser.role == 1} onRemove={() => onDeletion({sex: item.sex,name: `${item.first_name} ${item.last_name}`, id: store.appUser.team.mates.filter(i => i.uid == item.id).pop()._id})} description={item.id == store.appUser.team.leader.uid && 'Капитан'} before={<Avatar size={44} src={item.photo_200}/>} key={item.uid} >{item.first_name} {item.last_name}</Cell>
+                        <Cell removable={ item.id != store.appUser.team.leader.uid && store.activeContest?.institute != store.appUser.team.institute && store.appUser.role == 1 && store.appUser.team.stage != 21} onRemove={() => onDeletion({sex: item.sex,name: `${item.first_name} ${item.last_name}`, id: store.appUser.team.mates.filter(i => i.uid == item.id).pop()._id})} description={item.id == store.appUser.team.leader.uid && 'Капитан'} before={<Avatar size={44} src={item.photo_200}/>} key={item.uid} >{item.first_name} {item.last_name}</Cell>
                         ))}
-                        {store.appUser.team.mates.length < 12 && store.activeContest?.institute != store.appUser.team.institute && store.appUser.role == 1 && <CellButton onClick={platform != ANDROID ? setActiveModal.bind(this, 'selectFriends') : selectFriends} before={<Avatar shadow={false} size={44}><Icon28AddOutline /></Avatar>}>Добавить участников</CellButton>}
+                        {store.appUser.team.mates.length < 15 && store.activeContest?.institute != store.appUser.team.institute && store.appUser.role == 1 &&  store.appUser.team.stage != 21 && <CellButton onClick={platform != ANDROID ? setActiveModal.bind(this, 'selectFriends') : selectFriends} before={<Avatar shadow={false} size={44}><Icon28AddOutline /></Avatar>}>Добавить участников</CellButton>}
                     </List>
             </Group>
             {snackbar}

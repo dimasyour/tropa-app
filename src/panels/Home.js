@@ -1,24 +1,27 @@
 import React, { useState, useEffect, Fragment, useRef } from 'react';
 import { inject, observer } from 'mobx-react'
-import { Panel, Avatar, Header, PanelHeader, Tabs, TabsItem, List, Snackbar, ModalCard, Counter, FormItem, Div, Placeholder, Button, Cell, Switch, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, VKCOM, ViewWidth, Alert, RichCell, Link, View, Title, Caption, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, FormLayout, Radio, Input, Text } from '@vkontakte/vkui';
+import { Panel, Avatar, Header, PanelHeader, Tabs, TabsItem, List, Snackbar, ModalCard, Counter, FormItem, Div, Placeholder, Button, Cell, Switch, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, VKCOM, ViewWidth, Alert, RichCell, Link, View, Title, Caption, CellButton, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, FormLayout, Radio, Input, Text, Tooltip } from '@vkontakte/vkui';
 import { timeToDate, timeFormat, getDate, declOfNum, getIcon } from '../utils/func';
 import { Icon16ErrorCircleOutline } from '@vkontakte/icons';
 import { Icon16Done, Icon16ErrorCircle,Icon20InfoCircleOutline, Icon24Cancel, Icon24Done,Icon20FireCircleFillRed, Icon24BrainOutline, Icon24ScanViewfinderOutline, Icon28Flash, Icon16Chevron, Icon28Notifications, Icon28RefreshOutline, } from '@vkontakte/icons';
-import { Icon12OnlineVkmobile } from '@vkontakte/icons';
+import { Icon12OnlineVkmobile, Icon28InfoOutline, Icon24DownloadOutline } from '@vkontakte/icons';
 
 import 'dayjs/locale/ru'
 import TaskCard from './components/TaskCard'
 import QRCode from 'react-qr-code'
 import CustomPopout from './components/CustomPopout';
+import VideoPopout from './components/VideoPopout';
 import bridge from '@vkontakte/vk-bridge'
 import final from '../img/final.png';
+import ReactPlayer from 'react-player/lazy';
 
 import TeamAvatar from './components/TeamAvatar';
 import { Icon28GhostSimleOutline } from '@vkontakte/icons';
-import { service_key } from '../config';
+import { service_key, serverURL } from '../config';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru'
 import { LazyLoadImage } from 'react-lazy-load-image-component';
+import 'react-lazy-load-image-component/src/effects/black-and-white.css';
 
 const Home = inject('store')(observer(({ id, store }) => {
 	const platform = usePlatform()
@@ -28,6 +31,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 	const [ activeModal, setActiveModal ] = useState(null)
 	const [ snackbar, setSnackbar ] = useState(null)
 	const [ activeTabPoint, setActiveTabPoint ] = useState('history')
+	const [ visibleTooltip, setVisibleTooltip ] = useState(true)
 
 	const [ rateTeam, setRateTeam ] = useState(null)
 
@@ -36,37 +40,52 @@ const Home = inject('store')(observer(({ id, store }) => {
 	const [ answer, setAnswer ] = useState('')
 	const [ rate, setRate ] = useState(-1)
 	const [ showFailure, setShowFailure ] = useState(false)
-	const [ showComplete, setShowComplete ] = useState(false)
+	const [ selectedTeam, setSelectedTeam ] = useState(null)
 	const [ selectedTab, setSelectedTab ] = useState('rules')
 	const [ moders, setModers ] = useState([])
 
 	const idRateRef = useRef()
-
-	const handleScan = res => console.log(res)
-	const handleError = res => console.log(res)
 	idRateRef.current = idRate
 
 	const [ isShow, setIsShow ] = useState(false)
 
 	const institute = ['', 'ИВТС', 'ИПМКН', 'ИГДИС', 'ИЕН', 'ИПФКСиТ', 'ПТИ', 'ИПУ', 'ИГСН', 'МИ']
+	institute[15] = 'поколения(день 1)'
+    institute[16] = 'поколения(день 2)'
+    institute[20] = 'финалисты'
 
 	useEffect(() => {
-		if(store.appUser.role > 3){
-			const startParams = new URLSearchParams(window.location.search)
-			const allowed = startParams.get("vk_are_notifications_enabled")
-			if(allowed == 0){
-				setActiveModal('req_notify')
-			}
-		} else if(store.appUser.role == 1){
-			const startParams = new URLSearchParams(window.location.search)
-			const allowed = startParams.get("vk_are_notifications_enabled")
-			if(allowed == 0){
-				setActiveModal('req_notify_leader')
+		if(store.socket){
+			store.socket.on('team:show_modal', data => {
+				if(data.modal == "intro"){
+					setPopout(<VideoPopout onClose={setPopout.bind(this, null)}/>)
+				}
+			})
+			if(store.appUser.role > 3){
+				const startParams = new URLSearchParams(window.location.search)
+				const allowed = startParams.get("vk_are_notifications_enabled")
+				if(allowed == 0){
+					setActiveModal('req_notify')
+				}
+			} else if(store.appUser.role == 1){
+				const startParams = new URLSearchParams(window.location.search)
+				const allowed = startParams.get("vk_are_notifications_enabled")
+				if(allowed == 0){
+					setActiveModal('req_notify_leader')
+				}
 			}
 		}
+		
 	}, [])
 
 
+	const downloadBtn = store.appUser?.team?.stage == 9 && store.appUser?.team?.substage == 0 && <Tooltip onClose={() => {setVisibleTooltip(false);}} isShown={visibleTooltip} text="Вы можете скачать изображение" offsetY="10">
+		<Link onClick={() => bridge.send("VKWebAppDownloadFile", {"url": `https://leton.cc/image/${store.currentTask?.task?.static?.value}`, "filename": `${store.currentTask?.task?.static?.value}.png`})} style={{marginRight: 25}}><Icon24DownloadOutline width={20} height={20}/></Link>
+	</Tooltip>
+
+	const openModal = (team) => {
+		store.socket.emit('moder:show_modal', { team: team, modal: 'intro'})
+	}
 	const requestNotify = () => {
 		bridge.send("VKWebAppAllowNotifications").catch(err => {
 			if(err.error_data.error_code == 4){
@@ -225,7 +244,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 		})
 		setAnswer('')
 	}
-	const finishtask = {title:"Завершение забега", text:"Молодцы! Возвращайтесь на старт к информационно-технологическому центру и выполните свое последнее задание."}
+	const finishtask = {title:"Завершение забега", text:"Молодцы! Возвращайтесь к 5 корпусу и выполните своё последнее задание."}
 	const attention = { title:"ВАЖНАЯ ИНФОРМАЦИЯ", text:`В связи с эпидемиологической обстановкой команды на старт будут приходить по очереди к определённому времени. Не приходите раньше, но и не опаздывайте!
 	Мы ждем вас на старте у ИТЦ`}
 	const toggleShow = () => setIsShow(!isShow)
@@ -365,6 +384,52 @@ const Home = inject('store')(observer(({ id, store }) => {
 			
 		</ModalPage>
 		<ModalPage
+		id="teamActions"
+		onClose={() => { setActiveModal(null); setSelectedTeam(null) }}
+		header={<ModalPageHeader
+			left={(
+				<Fragment>
+				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}><Icon24Cancel /></PanelHeaderButton>}
+				</Fragment>
+			  )}
+		  >
+			Действия с командой "{selectedTeam?.name ?? '-'}"
+		  </ModalPageHeader>} >
+		  	<List>
+		  		<CellButton onClick={setActiveModal.bind(this, 'teamRates')}>Посмотреть оценки</CellButton>
+			  	<CellButton onClick={() => { openModal(selectedTeam?._id); setActiveModal(null)}}>Показать интро видео</CellButton>
+		  	</List>
+		</ModalPage>
+		<ModalPage
+		id="teamRates"
+		onClose={() => { setActiveModal(null); setSelectedTeam(null) }}
+		header={<ModalPageHeader
+			left={(
+				<Fragment>
+				  {(platform === ANDROID || platform === VKCOM) && <PanelHeaderButton onClick={setActiveModal.bind(this, null)}><Icon24Cancel /></PanelHeaderButton>}
+				</Fragment>
+			  )}
+		  >
+			Оценки "{selectedTeam?.name ?? '-'}"
+		  </ModalPageHeader>} >
+		  	<List>
+				  {selectedTeam?.rates.length ? selectedTeam?.rates.map(rate => (<RichCell
+                 disabled
+                 multiline
+                 text={rate.comment[rate.comment.length - 1].length ? rate.comment[rate.comment.length - 1] : 'без комментария'}
+                 caption={rate.point}
+                 after={rate.rate + ' ' + declOfNum(rate.rate, ['балл', 'балла', 'баллов'])}
+                >
+                     {rate.org.vkUser}
+                </RichCell>)) : <Placeholder
+              icon={<Icon28InfoOutline width={80} height={80}/>}
+            >
+              Оценок ещё нет
+            </Placeholder>}
+			  
+		  	</List>
+		</ModalPage>
+		<ModalPage
 		id="rateTeam1"
 		settlingHeight={100}
 		onClose={setActiveModal.bind(this, null)}
@@ -437,7 +502,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 						<Input name="comment" onChange={onChangeComment}/>
             		</FormItem>
 					<FormItem>
-						<Button size="l" stretched onClick={editRate}>Изменить</Button>
+						<Button size="l" stretched onClick={rate == -1 ? null : editRate} disabled={rate == -1}>Изменить</Button>
 					</FormItem>
 				</FormLayout>
 			</Div>
@@ -566,7 +631,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 			{ store.appUser.team && !store.appUser?.team.startAt && store.appUser.role < 2 && store.appUser.team.stage < 20 && <Group header={<Header mode="secondary">Ваша тропа</Header>}>
 						{store.teamContest && <RichCell
 						key={store.teamContest._id}
-						before={<Avatar src={getIcon(store.teamContest.institute)} mode="app"/>}
+						before={<Avatar src={getIcon(store.teamContest.role)} mode="app"/>}
 						caption={getDate(store.teamContest.date)}
 						after={store.appUser.team.stage == 0 ? store.teamContest.status ? store.appUser.role == 1 ? store.appUser.team.status == 3 ? <Button mode="outline" onClick={setActiveModal.bind(this, 'rules')}>Начать забег</Button> : '' : '' : timeFormat('dd дн. hh ч.',store.secToTeamContest) : '-'}>
 							{store.teamContest.name}
@@ -574,10 +639,10 @@ const Home = inject('store')(observer(({ id, store }) => {
 					</Group>
 					}
 					{/* {store.appUser.team.start && store.appUser.team.currTask} */}
-			{store.appUser.role == 2 && store.activeContest && store.activeContest?.institute != store.appUser.team?.institute && <Group header={<Header mode="secondary">Активная тропа</Header>}>
+			{store.appUser.role == 2 && store.activeContest && !store.appUser.team?.role.incudes(store.activeContest?.role) && <Group header={<Header mode="secondary">Активная тропа</Header>}>
 				<RichCell
 				key={store.activeContest._id}
-				before={<Avatar src={getIcon(store.activeContest.institute)} mode="app"/>}>
+				before={<Avatar src={getIcon(store.activeContest.role)} mode="app"/>}>
 					{store.activeContest.name}
 				</RichCell>
 			</Group>
@@ -589,7 +654,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 						</div>
 						</TaskCard>}
 
-			{store.appUser.team && store.appUser.team.startAt && store.appUser.role < 3 && store.appUser.team.status != 5 && store.appUser?.team.stage != 20 && store.appUser?.team.stage != 21 && <Group header={<Header mode="secondary" aside={<Link onClick={() => {store.socket.emit('user:get_task', { team: store.appUser.team._id});snackbarOk('Данные обновлены');}}><Icon28RefreshOutline width={20} height={20}/></Link>} >Текущее задание</Header>}>
+			{store.appUser.team && store.appUser.team.startAt && store.appUser.role < 3 && store.appUser.team.status != 5 && store.appUser?.team.stage != 20 && store.appUser?.team.stage != 21 && <Group header={<Header mode="secondary" aside={<>{downloadBtn}<Link onClick={() => {store.socket.emit('user:get_task', { team: store.appUser.team._id});snackbarOk('Данные обновлены');}}><Icon28RefreshOutline width={20} height={20}/></Link></>} >Текущее задание</Header>}>
 
 				{<TaskCard task={store.currentTask} stage={store.appUser.team.substage}>
 					{!store.appUser.team.substage ? <Button before={<Icon24BrainOutline width={20} height={20}/>} mode="outline" size="m" onClick={setActiveModal.bind(this, 'check_ans')} stretched >Проверить ответ</Button> : <Button size="m" before={<Icon24ScanViewfinderOutline width={20} height={20}/>} mode="outline" onClick={readQR} stretched>Сканировать QR</Button>}
@@ -609,13 +674,15 @@ const Home = inject('store')(observer(({ id, store }) => {
 			</div>}
 
 			{store.appUser.team && store.appUser?.team.stage == 21 && <div style={{display: 'flex', alignItems: 'center', flexDirection: 'column'}}>
-				<LazyLoadImage
+				{store.appUser?.team.role.includes(15) || store.appUser?.team.role.includes(16) || store.appUser?.team.role.includes(20) ? 
+				<ReactPlayer url={`${serverURL}video/outro`} width="100%" controls={true} light={'https://leton.cc/image/preview'}/>
+				: <LazyLoadImage
 				 src={final}
-				 placeholder={<span>Загружается...</span>}
-				/>
+				/>}
 				<div style={{marginTop: 20, textAlign: 'center'}}>
 					<Title level={2} weight="semibold" style={{fontSize: '24px'}}>Поздравляем! Вы прошли свою «Тропу Первака»!</Title>
-					<Title level={3} weight="semibold" multiline>Ожидайте результатов забега в нашей группе ВКонтакте и в мини-приложении на вкладке «Забеги»</Title>
+					{store.teamContest?.results?.length ? <Title level={3} weight="semibold" multiline>Результаты вашего забега уже опубликованы на вкладке "Забеги > Прошедшие"</Title> : <Title level={3} weight="semibold" multiline>Ожидайте результатов забега в нашей группе ВКонтакте и в мини-приложении на вкладке «Забеги»</Title> } 
+					
 				</div>
 			</div>}
 
@@ -623,10 +690,10 @@ const Home = inject('store')(observer(({ id, store }) => {
 			:
 			// БЕЗ КОМАНДЫ
 			<>
-			{store.appUser.role < 3 && store.activeContest && store.activeContest?.institute != store.appUser.team?.institute && <Group header={<Header mode="secondary">Активная тропа</Header>}>
+			{store.appUser.role < 3 && store.activeContest && <Group header={<Header mode="secondary">Активная тропа</Header>}>
 				<RichCell
 				key={store.activeContest._id}
-				before={<Avatar src={getIcon(store.activeContest.institute)} mode="app"/>}>
+				before={<Avatar src={getIcon(store.activeContest.role)} mode="app"/>}>
 					{store.activeContest.name}
 				</RichCell>
 			</Group>}
@@ -635,6 +702,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 			}
 			{store.appUser.role > 3 && store.activeContest && <Group header={<Header mode="secondary" aside={<Link onClick={() => {store.socket.emit('org:refresh_team');snackbarOk('Данные обновлены');}}><Icon28RefreshOutline width={20} height={20}/></Link>}>Положение команд</Header>}>
 				{ 
+				store.orgTeams.length ? 
 				store.orgTeams.map(team => {
 					const rate = team.rates.reduce((acc, rate) => acc + rate.rate, 0)
 					return (<RichCell
@@ -642,11 +710,17 @@ const Home = inject('store')(observer(({ id, store }) => {
 				before={<TeamAvatar team={team}/>}
 				text={team.stage ? team.stage == 20 ? "Бегут на финиш" : team.stage == 21 ? "Финишировали" : `Точка ${team.stage}` : `Стартуют в ${dayjs(new Date(team.startTime)).locale('ru').format('HH:mm')}`}
 				after={rate + ' ' + declOfNum(rate , ['балл', 'балла', 'баллов'])}
-				caption={team.substage ? 'на точке' : team.stage ? 'решают загадку' : ''}>
+				caption={team.stage < 20 ? team.substage ? 'на точке' : team.stage ? 'решают загадку' : '' : ''}
+				onClick={() => {setSelectedTeam(team); setActiveModal('teamActions')}}
+				>
 					{team.name}
-				</RichCell>)})
+				</RichCell>)}) :
+				<div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 20, color: 'var(--text_secondary)'}}>
+					<Icon28InfoOutline width={80} height={80}/>
+					<div style={{fontSize: 24, marginTop: 10}}>Список команд скоро появится</div>
+				</div>
 				}
-			</Group> }
+			</Group>}
 
 
 			{store.appUser.role == 3 && <>
@@ -655,6 +729,7 @@ const Home = inject('store')(observer(({ id, store }) => {
 						Отображать оценки
 					</Cell>
 				{
+				store.orgTeams.length ? 
 				store.orgTeams.map(team => {
 					const ratesOnPoint = team.rates.filter(rate => rate.point == store.appUser.point.title)
 					let index = (store.appUser.point?.num - 1) * 2
@@ -669,12 +744,16 @@ const Home = inject('store')(observer(({ id, store }) => {
 					(ratesOnPoint.length ? () => {setActiveModal('editRate'); setRateTeam(team); setIdRate(ratesOnPoint[0])} : () => { setActiveModal('rateTeam2'); setRateTeam(team)}))
 					return (<RichCell
 						onClick={click}
-						caption={`${institute[team.institute]}, гр.${team.group} ${team.timings[index] && team.stage == store.appUser.point?.num ? `, на задании точки с ${new Date(team.timings[index]).getHours()}:${new Date(team.timings[index]).getMinutes()}` : ''}`}
+						caption={`${institute[team.institute]}${team.group ? ', гр.'+team.group : ''}${team.timings[index] && team.stage == store.appUser.point?.num ? `, ушли с прошлой точки в ${new Date(team.timings[index]).getHours()}:${new Date(team.timings[index]).getMinutes() < 10 ? '0' + new Date(team.timings[index]).getMinutes() : new Date(team.timings[index]).getMinutes()}` : ''}`}
 						before={<TeamAvatar team={team}/>}
 						after={right}>
 						{team.name}
 					</RichCell>)
-					})
+					}) : 
+					<div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 20, color: 'var(--text_secondary)'}}>
+						<Icon28InfoOutline width={80} height={80}/>
+						<div style={{fontSize: 24, marginTop: 10}}>Список команд скоро появится</div>
+					</div>
 				}
 			
 				</Group>
@@ -682,6 +761,8 @@ const Home = inject('store')(observer(({ id, store }) => {
 			}
 		{store.homeSnackbar}
 		{snackbar}
+		{/* {<Button onClick={openModal.bind(this, '6159dc124dda1ce243b10ab4')}>Открыть модалку</Button>} */}
+		{/* <Button onClick={() => bridge.send("VKWebAppDownloadFile", {"url": "https://leton.cc/image/preview", "filename": "preview.png"})}>Скачать картинку</Button> */}
 	</Panel>
 </View>
 )}));

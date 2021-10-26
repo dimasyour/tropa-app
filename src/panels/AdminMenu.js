@@ -437,6 +437,9 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
         'дисквалифицированы'
     ]
     const institute = ['', 'ИВТС', 'ИПМКН', 'ИГДИС', 'ИЕН', 'ИПФКСиТ', 'ПТИ', 'ИПУ', 'ИГСН', 'МИ']
+    institute[15] = 'поколения(день 1)'
+    institute[16] = 'поколения(день 2)'
+    institute[20] = 'финалисты'
 	const modals = (<ModalRoot activeModal={activeModal}>
         <ModalPage id="contests"
         onClose={() => setActiveModal(null)}
@@ -663,7 +666,7 @@ const AdminMenu = inject('store')(observer(({ id, store }) => {
                     </SimpleCell>
                     <SimpleCell multiline>
                         <InfoRow header="Группа">
-                            {selectedTeam?.group} - {institute[selectedTeam?.institute]} 
+                            {selectedTeam?.group ?? 'не указана'} - {institute[selectedTeam?.institute]} 
                         </InfoRow>
                     </SimpleCell>
                 <Header mode="secondary">Участники</Header>

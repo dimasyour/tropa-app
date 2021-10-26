@@ -19,7 +19,8 @@ const Start = inject('store')(observer(({ id, store, theme }) => {
 			</Div>
 			<div style={{ borderBottomRightRadius: "50%", borderBottomLeftRadius: "50%", background: '#4BB34B', height: 80	}}></div>
 			<Div style={{flex: 2}}>
-				<Button size="l" stretched style={{marginTop: 8}} onClick={store.goPage.bind(this, "reg")}>Создать команду</Button>
+				{/* <Button size="l" stretched style={{marginTop: 8}} onClick={store.goPage.bind(this, "reg")}>Создать команду</Button> */}
+				<Button size="l" stretched style={{marginTop: 8}} onClick={store.goPage.bind(this, "regGen")}>Регистрация на забег поколений</Button>
 				<Separator/>
 				<Button size="l" stretched style={{marginTop: 8}} mode="secondary" onClick={store.goPage.bind(this, "home")}>Продолжить без регистрации</Button>
 			</Div>

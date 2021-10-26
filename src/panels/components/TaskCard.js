@@ -1,20 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import '../css/taskcard.css';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
+import 'react-lazy-load-image-component/src/effects/blur.css';
 import ReactPlayer from 'react-player/lazy'
 import { serverURL } from '../../config'
 
-import one from '../../img/tasks/1.png';
-import two from '../../img/tasks/2.jpg';
-import three from '../../img/tasks/3.png';
-import four from '../../img/tasks/4.png';
-import five from '../../img/tasks/5.jpg';
 
 export default function NewsCard({ task, children, stage, info }) {
     const [placeholder, setPlaceholder] = useState(true)
     const [title, setTitle] = useState(<div className="task-title-placeholder"></div>)
     const [text, setText] = useState(<div className="task-text-placeholder"></div>)
-    const images = [one, two, three, four, five]
     useEffect(() => {
         if(task){
             if(task.title){
@@ -33,12 +28,12 @@ export default function NewsCard({ task, children, stage, info }) {
         task ? <div className="task-wraper">
         {task?.task?.static?.type == 'image' && !stage && <div className="image-wraper">
             <LazyLoadImage
-                src={images[task.task.static.value]}
-                placeholder={<span>Загружается...</span>}
+                src={`${serverURL}image/${task.task.static.value}`}
+                effect='black-and-white'
             />
         </div>}
         {task?.task?.static?.type == 'video' && !stage && <div className="image-wraper">
-                <ReactPlayer url={`${serverURL}video/?id=${task.task.static.value}`} width="100%" controls={true}/>
+                <ReactPlayer url={`${serverURL}video/${task.task.static.value}`} width="100%" height="168px" controls={true} light={'https://leton.cc/image/preview'}/>
             </div>}
         {!placeholder ? <div className="task-content">
             <div className="task-title">{ !stage ? '???' : title}</div>

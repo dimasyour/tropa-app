@@ -2,11 +2,12 @@ import React, {useEffect, useState, useLayoutEffect, useMemo } from 'react';
 import { inject, observer } from 'mobx-react'
 import axios from 'axios';
 
-import { Panel, PanelHeader, PanelHeaderClose, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, ViewWidth, RichCell, View, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, Header, SimpleCell, Cell, MiniInfoCell, InfoRow } from '@vkontakte/vkui';
+import { Panel, PanelHeader, PanelHeaderClose, Group, PanelHeaderButton, usePlatform, IOS, ANDROID, ViewWidth, RichCell, View, useAdaptivity, ModalRoot, ModalPage, ModalPageHeader, Header, SimpleCell, Cell, MiniInfoCell, InfoRow, Avatar } from '@vkontakte/vkui';
 import { Icon28ChevronBack, Icon24Back, Icon24Dismiss, Icon20ArticleBoxOutline } from '@vkontakte/icons'
-import { serverURL } from '../config';
+import { serverURL, access_token } from '../config';
 import { timeFormat, timeToDate } from '../utils/func'
 import TeamAvatar from './components/TeamAvatar';
+import bridge from '@vkontakte/vk-bridge'
 
 const Tasks = inject('store')(observer(({ id, store }) => {
 	const osName = usePlatform()
@@ -16,6 +17,7 @@ const Tasks = inject('store')(observer(({ id, store }) => {
 	const [activeModal, setActiveModal] = useState({modal: null, point: null })
 	const [tasks, setTasks] = useState([])
 	const [snackbar, setSnackbar] = useState(null)
+	const [org, setOrg] = useState(null)
 	const pointsRef = React.useRef()
 
 	const getTeamsOnPoint = (num) => {
@@ -24,7 +26,17 @@ const Tasks = inject('store')(observer(({ id, store }) => {
 
 	pointsRef.current = points
 	useEffect(() => {
-		
+		if(activeModal.modal){
+			store.socket.emit('admin:get_point_org', { point: activeModal.point._id })
+			store.socket.on('admin:get_point_org', data => {
+				if(data.org){
+					const { uid } = data.org
+					bridge.send("VKWebAppCallAPIMethod", {"method": "users.get", "params": {"user_ids": uid, "v":"5.131", "access_token": access_token, "fields": "photo_200"}}).then(d => {
+						setOrg({ photo: d.response[0].photo_200, username: d.response[0].first_name + ' ' + d.response[0].last_name})
+					})
+				}
+			})
+		}
 	}, [activeModal])
 
 	useLayoutEffect(() => {
@@ -40,10 +52,10 @@ const Tasks = inject('store')(observer(({ id, store }) => {
 		<ModalPage
 		id="point_info"
 		settlingHeight={100}
-		onClose={setActiveModal.bind(this, {modal: null, point: null})}
+		onClose={() => { setActiveModal({modal: null, point: null}); setOrg(null) } }
 		header={<ModalPageHeader
-			right={osName === IOS && <PanelHeaderButton onClick={setActiveModal.bind(this, {modal: null, point: null})}><Icon24Dismiss/></PanelHeaderButton>}
-			left={isMobile && osName === ANDROID && <PanelHeaderClose onClick={setActiveModal.bind(this, {modal: null, point: null})}/>}
+			right={osName === IOS && <PanelHeaderButton onClick={() => { setActiveModal({modal: null, point: null}); setOrg(null) } }><Icon24Dismiss/></PanelHeaderButton>}
+			left={isMobile && osName === ANDROID && <PanelHeaderClose onClick={() => { setActiveModal({modal: null, point: null}); setOrg(null) } }/>}
 		  >
 			{activeModal.point ? activeModal.point.title : null}
 		  </ModalPageHeader>} >
@@ -68,6 +80,11 @@ const Tasks = inject('store')(observer(({ id, store }) => {
 					{activeModal.point?.task.pointTaskTitle}
 					</InfoRow>
 				</SimpleCell>
+				{org && <SimpleCell before={<Avatar src={org.photo}/>}>
+					<InfoRow header="Организатор">
+						{org.username}
+					</InfoRow>
+				</SimpleCell>}
 				<MiniInfoCell
 					before={<Icon20ArticleBoxOutline />}
 					textWrap="full"

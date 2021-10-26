@@ -14,6 +14,7 @@ import Home from './panels/Home';
 import Hello from './panels/Hello'
 import Start from './panels/Start';
 import store from './store/store';
+import RegTeamGen from './panels/RegTeamGen';
 import RegTeam from './panels/RegTeam';
 import AdminMenu from './panels/AdminMenu';
 import Tasks from './panels/Tasks';
@@ -39,9 +40,14 @@ const App = ({ platform }) => {
 				const theme = data.scheme ? data.scheme : 'bright_light';
 				setTheme(theme)
 			} else if( type == 'VKWebAppViewHide'){
-				console.log('hide')
+				store.socket.disconnect();
+			} else if( type == 'VKWebAppViewRestore'){
+				store.socket.connect()
 			}
 		});
+	}, [])
+	useEffect(() => {
+		
 		if(store.activePage == 'start'){
 			bridge.send("VKWebAppSetViewSettings", {"status_bar_style": "light", "action_bar_color": "#4BB34B"});
 		} else {
@@ -108,7 +114,7 @@ const App = ({ platform }) => {
 			<AdaptivityProvider>
 				<AppRoot mode="full">
 					<Provider store={store}>
-					<Epic activeStory={store.activePage} tabbar={ store.activePage != 'hello' && store.activePage != 'start' && store.activePage != 'reg' && <Tabbar>
+					<Epic activeStory={store.activePage} tabbar={ store.activePage != 'hello' && store.activePage != 'start' && store.activePage != 'reg'  && store.activePage != 'regGen' && <Tabbar>
 								<TabbarItem
 								onClick={onStoryChange}
 								selected={store.activePage === 'contestList'}
@@ -129,14 +135,13 @@ const App = ({ platform }) => {
 								text="Команда"
 								><Icon28Users3Outline/></TabbarItem>
 								}
-								{ store.appUser.role < 4 &&
-									<TabbarItem
+								
+								<TabbarItem
 								onClick={onStoryChange}
 								selected={store.activePage === 'info'}
 								data-story="info"
 								text="Информация"
 								><Icon28InfoCircleOutline/></TabbarItem>
-								}
 								{ (store.appUser.role > 3) && <TabbarItem
 								onClick={onStoryChange}
 								selected={store.activePage === 'admin'}
@@ -155,17 +160,10 @@ const App = ({ platform }) => {
 								<Start id='start' theme={theme}/>
 							</View>
 							
-								<RegTeam id='reg'/>
-							
-								
-							
-							
+							<RegTeam id='reg'/>
+							<RegTeamGen id='regGen'/>
 							<ContestList id='contestList'/>
-							
-							<View id="teamList" activePanel="teamList">
-								<TeamList id='teamList'/>
-							</View>
-							
+							<TeamList id='teamList'/>
 							<Info id='info'/>
 							<Home id='home'/>
 							<MyTeam id='team'/>
